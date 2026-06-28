@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Taste Restaurant Digital Menu - Order gourmet burgers, artisan pizzas, premium desserts, and fresh drinks. Available in English & Arabic with quick WhatsApp ordering.">
+    <meta name="keywords" content="digital menu, taste restaurant, restaurant menu, burgers, pizza, drinks, desserts, online order, whatsapp order">
+    <meta name="author" content="Taste Restaurant">
+    <title>Taste Restaurant - Premium Digital Menu</title>
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://taste-restaurant.github.io/">
+    <meta property="og:title" content="Taste Restaurant - Premium Digital Menu">
+    <meta property="og:description" content="Order gourmet burgers, artisan pizzas, premium desserts, and fresh drinks. Quick WhatsApp ordering.">
+    <meta property="og:image" content="assets/logo.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://taste-restaurant.github.io/">
+    <meta property="twitter:title" content="Taste Restaurant - Premium Digital Menu">
+    <meta property="twitter:description" content="Order gourmet burgers, artisan pizzas, premium desserts, and fresh drinks. Quick WhatsApp ordering.">
+    <meta property="twitter:image" content="assets/logo.png">
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="assets/logo.png" type="image/x-icon">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom Stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Background Decoration Grid & Blur -->
+    <div class="glow-bg">
+        <div class="glow-circle glow-circle-1"></div>
+        <div class="glow-circle glow-circle-2"></div>
+    </div>
+
+    <!-- Navigation Header -->
+    <header class="main-header">
+        <div class="nav-container">
+            <a href="#" class="nav-brand">
+                <img src="assets/logo.png" alt="Taste Logo" class="nav-logo">
+                <span class="brand-text">Taste</span>
+            </a>
+            
+            <div class="nav-actions">
+                <!-- Language Toggle Button -->
+                <button id="lang-toggle" class="btn-icon" aria-label="Toggle Language" data-tooltip="العربية">
+                    <span class="lang-text">العربية</span>
+                    <i class="fa-solid fa-globe"></i>
+                </button>
+                
+                <!-- Shopping Cart Button -->
+                <button id="cart-toggle" class="btn-icon cart-btn" aria-label="View Order" data-tooltip="Order Details">
+                    <i class="fa-solid fa-receipt"></i>
+                    <span id="cart-count" class="cart-badge">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-content">
+            <div class="hero-logo-container">
+                <img src="assets/logo.png" alt="Taste Restaurant Logo" class="hero-logo animate-fade-in">
+            </div>
+            <h1 class="restaurant-name animate-slide-up">Taste Restaurant</h1>
+            <p class="restaurant-slogan animate-slide-up-delayed" data-translate="slogan">Fresh & Delicious Every Day</p>
+            
+            <!-- Luxury Divider -->
+            <div class="gold-divider">
+                <span class="line"></span>
+                <span class="star"><i class="fa-solid fa-star"></i></span>
+                <span class="line"></span>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="search-container animate-fade-in-delayed">
+                <div class="search-wrapper">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="menu-search" placeholder="Search menu items..." data-translate-placeholder="searchPlaceholder">
+                    <button id="search-clear" class="search-clear" aria-label="Clear search">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Category Nav Bar (Sticky) -->
+    <nav class="category-nav">
+        <div class="category-scroll-container">
+            <button class="category-btn active" data-category="all">
+                <i class="fa-solid fa-utensils"></i>
+                <span data-translate="catAll">All Menu</span>
+            </button>
+            <button class="category-btn" data-category="burgers">
+                <i class="fa-solid fa-hamburger"></i>
+                <span data-translate="catBurgers">Burgers</span>
+            </button>
+            <button class="category-btn" data-category="pizza">
+                <i class="fa-solid fa-pizza-slice"></i>
+                <span data-translate="catPizza">Pizza</span>
+            </button>
+            <button class="category-btn" data-category="drinks">
+                <i class="fa-solid fa-glass-water"></i>
+                <span data-translate="catDrinks">Drinks</span>
+            </button>
+            <button class="category-btn" data-category="desserts">
+                <i class="fa-solid fa-ice-cream"></i>
+                <span data-translate="catDesserts">Desserts</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content Menu Grid -->
+    <main class="menu-main">
+        <div class="container">
+            <!-- Dynamic Section Title -->
+            <div class="section-header">
+                <h2 id="current-category-title" data-translate="catAll">All Menu</h2>
+                <p id="items-count-display"><span id="items-count">0</span> <span data-translate="itemsFound">items loaded</span></p>
+            </div>
+
+            <!-- Grid of Cards -->
+            <div id="menu-grid" class="menu-grid">
+                <!-- Dynamically populated via JavaScript -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="empty-state hidden">
+                <i class="fa-solid fa-face-frown-open empty-icon"></i>
+                <h3 data-translate="noItemsTitle">No items found</h3>
+                <p data-translate="noItemsDesc">Try searching for something else or browse other categories.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Floating Shopping Cart Drawer -->
+    <div id="cart-drawer" class="cart-drawer">
+        <div class="cart-overlay"></div>
+        <div class="cart-content">
+            <div class="cart-header">
+                <div class="cart-header-title">
+                    <i class="fa-solid fa-receipt gold-text"></i>
+                    <h3 data-translate="cartTitle">Your Order</h3>
+                </div>
+                <button id="cart-close" class="btn-icon" aria-label="Close Cart">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="cart-body">
+                <div id="cart-items" class="cart-items">
+                    <!-- Populated dynamically -->
+                </div>
+                
+                <div id="cart-empty-state" class="cart-empty-state">
+                    <i class="fa-solid fa-basket-shopping cart-empty-icon"></i>
+                    <p data-translate="cartEmpty">Your order is empty. Add delicious items from the menu!</p>
+                </div>
+            </div>
+
+            <div class="cart-footer">
+                <div class="cart-summary">
+                    <div class="cart-total-row">
+                        <span data-translate="cartTotal">Total Amount</span>
+                        <span id="cart-total-value">0.00 JD</span>
+                    </div>
+                </div>
+                <button id="whatsapp-checkout" class="btn-whatsapp-checkout">
+                    <i class="fa-brands fa-whatsapp"></i>
+                    <span data-translate="sendWhatsAppOrder">Order via WhatsApp</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating WhatsApp Quick Button -->
+    <button id="floating-whatsapp-btn" class="floating-whatsapp-btn" aria-label="WhatsApp Order" data-tooltip="Quick Chat">
+        <span class="pulse-ring"></span>
+        <i class="fa-brands fa-whatsapp"></i>
+        <span class="btn-badge hidden" id="floating-cart-badge">0</span>
+    </button>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <div class="container footer-grid">
+            <!-- Brand Column -->
+            <div class="footer-col footer-brand">
+                <img src="assets/logo.png" alt="Taste Logo" class="footer-logo">
+                <h3>Taste Restaurant</h3>
+                <p data-translate="footerSlogan">A luxury culinary experience crafted with passion and premium ingredients.</p>
+                <div class="social-links">
+                    <a href="https://instagram.com" target="_blank" aria-label="Instagram" class="social-icon"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://facebook.com" target="_blank" aria-label="Facebook" class="social-icon"><i class="fa-brands fa-facebook"></i></a>
+                    <a href="https://tiktok.com" target="_blank" aria-label="TikTok" class="social-icon"><i class="fa-brands fa-tiktok"></i></a>
+                </div>
+            </div>
+
+            <!-- Hours Column -->
+            <div class="footer-col">
+                <h4 data-translate="workingHoursTitle">Opening Hours</h4>
+                <ul class="hours-list">
+                    <li>
+                        <span data-translate="daysWeek">Saturday - Friday</span>
+                        <span class="gold-text" data-translate="hoursWeek">12:00 PM - 12:00 AM</span>
+                    </li>
+                </ul>
+                <h4 class="contact-info-title" data-translate="contactTitle">Contact Us</h4>
+                <p class="contact-detail"><i class="fa-solid fa-phone gold-text"></i> <span dir="ltr">+970 599 123 456</span></p>
+                <p class="contact-detail"><i class="fa-solid fa-envelope gold-text"></i> info@tasterestaurant.com</p>
+                <p class="contact-detail"><i class="fa-solid fa-location-dot gold-text"></i> <span data-translate="address">Ramallah, Palestine</span></p>
+            </div>
+
+            <!-- QR Code Column -->
+            <div class="footer-col qr-col">
+                <h4 data-translate="scanMenuTitle">Scan Our Menu</h4>
+                <p data-translate="scanMenuDesc">Share this menu with family & friends by scanning this QR Code.</p>
+                <div class="qr-container">
+                    <!-- Dynamic QR code target generated on script load -->
+                    <img id="qr-code-img" src="" alt="QR Code Menu" class="qr-image">
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2026 Taste Restaurant. <span data-translate="copyright">All rights reserved. Designed for excellence.</span></p>
+        </div>
+    </footer>
+
+    <!-- App Logic Script -->
+    <script src="app.js"></script>
+</body>
+</html>
