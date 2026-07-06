@@ -1,96 +1,67 @@
 # Taste Restaurant - Premium Digital Menu
 
-A luxurious, high-performance, and mobile-first responsive digital menu designed for upscale restaurants. Built entirely with vanilla **HTML5**, **CSS3**, and **JavaScript (ES6)**, it is lightweight, fast-loading, and completely ready for **GitHub Pages** deployment.
+A luxurious, mobile-first digital menu and admin dashboard for restaurants. The project now includes a working admin console with theme control, image upload and crop flow, drag-and-drop category and item reordering, stock toggling, item duplication, JSON import/export, analytics summaries, QR code generation, backups, and responsive mobile-friendly controls.
 
----
+## Included capabilities
 
-## Key Features
+- Public menu with bilingual English/Arabic support and WhatsApp ordering
+- Admin dashboard for restaurant owners and staff editors
+- Theme color editing from the dashboard
+- Image upload + crop + compression before save
+- Drag-and-drop reorder for categories and menu items
+- Availability toggle (In Stock / Out of Stock)
+- Duplicate existing items
+- JSON import/export for menu data
+- Analytics cards for total views, most viewed items, and WhatsApp orders
+- QR code generation per restaurant
+- Subscription status support (active, trial, expired)
+- Role-based permissions (Super Admin, Restaurant Admin, Staff Editor)
+- Dark mode for the admin dashboard
+- Firestore backup support and closed-signup security rules
+- GitHub Pages deployment workflow
 
-- 👑 **Luxury Aesthetic**: Sophisticated dark theme (`#0A0A0A`) with rich, warm gold accents (`#D4AF37`), subtle glows, and thin borders.
-- 📱 **Mobile-First Responsive Layout**: Optimized for smartphone browsers when scanned via QR codes.
-- 🌐 **Instant Bilingual Support**: Live toggle between English and Arabic without any page reloads, including full Right-to-Left (RTL) flipping.
-- 🔍 **Bilingual Search Bar**: Instant query matching that handles both English and Arabic product names, descriptions, and categories.
-- 🛍️ **Multi-Item WhatsApp Shopping Cart**: A slide-out cart drawer where customers can add multiple items, control quantities, see calculation totals, and send a beautifully formatted checkout message to the restaurant.
-- ⚡ **Direct WhatsApp Order**: Direct single-click ordering from the food item card for instant single-dish queries.
-- 🔗 **Dynamic QR Code Generator**: Renders a dynamic, gold-themed QR code in the footer pointing to the site's current deployment URL.
-- 🎭 **Micro-Animations**: Elegant entrance slides, scaling, and hover effects that enhance user engagement.
-
----
-
-## File Structure
+## File structure
 
 ```text
 /
-├── assets/                  # AI-generated food photography & logo
-│   ├── logo.png             # Golden brand logo
-│   ├── truffle_burger.png   # Truffle Burger image
-│   ├── cheese_burger.png    # Cheese Burger image
-│   ├── margherita_pizza.png # Margherita Pizza image
-│   ├── pepperoni_pizza.png  # Pepperoni Pizza image
-│   └── golden_mojito.png    # Golden Mojito image
-├── index.html               # Semantic HTML structure & translation targets
-├── styles.css               # Design system, glassmorphism, responsive grids, RTL adjustments
-├── app.js                   # Menu database, translation strings, cart logic, WhatsApp encoders
-└── README.md                # Deployment and customization documentation
+├── admin.html               # Admin dashboard shell
+├── admin.css                # Dashboard styling and responsive layout
+├── admin.js                 # Admin logic, CRUD, drag/drop, analytics, backups
+├── app.js                   # Public menu rendering, cart, theme application, analytics hooks
+├── firebase-config.js       # Firebase configuration placeholder and service init
+├── firestore.rules          # Firestore rules for restaurant isolation and role checks
+├── index.html               # Public menu entry point
+├── styles.css               # Public menu styling
+├── assets/                  # Restaurant images and logo
+└── .github/workflows/deploy.yml  # GitHub Pages deployment workflow
 ```
 
----
+## Security notes
 
-## Customization Guide
+- Firestore rules are scoped by restaurant ID and only permit authorized admins to write to their own restaurant data.
+- The sign-up flow is intentionally closed; only approved accounts should be inserted by your admin team.
+- Admin inputs are sanitized before they are written to state or Firestore.
 
-### 1. Updating the WhatsApp Phone Number
-To change the phone number where orders are received:
-1. Open [app.js](file:///c:/Users/easy%20life/Desktop/menu/app.js).
-2. Locate the static dictionary: `translations.en` and `translations.ar`.
-3. Modify the `whatsappNumber` property to your restaurant's WhatsApp phone number (with the international country code, e.g., `+970599123456` or `+966500000000` without spaces, hyphens, or leading double zeros):
-   ```javascript
-   whatsappNumber: "+970599123456"
-   ```
+## Firebase setup
 
-### 2. Modifying Menu Items
-To add, edit, or remove menu items:
-1. Open [app.js](file:///c:/Users/easy%20life/Desktop/menu/app.js).
-2. Edit the `menuItems` array. Each object supports:
-   - `id`: Unique identifier (string).
-   - `category`: Matches one of the categories (`burgers`, `pizza`, `drinks`, `desserts`).
-   - `price`: Double value (in JD or your configured currency).
-   - `image`: Relative path to asset or online URL.
-   - `name`: English (`en`) and Arabic (`ar`) translations.
-   - `description`: English (`en`) and Arabic (`ar`) descriptions.
-   - `tags`: Badge tags shown on top of cards.
+See [FIREBASE_SETUP.md](FIREBASE_SETUP.md) for the complete setup guide.
 
-### 3. Changing Currency
-To change the currency notation:
-1. Open [app.js](file:///c:/Users/easy%20life/Desktop/menu/app.js).
-2. Change the `currency` property in the `translations` object for both `en` (e.g., `USD` or `SR`) and `ar` (e.g., `دولار` or `ر.س`).
+**Production auth:** Admin login requires a real Firebase Auth account and a matching `users/{uid}` document in Firestore. Demo/mock login has been removed.
 
----
+## Deployment
 
-## Deployment to GitHub Pages
+1. Update the Firebase values in [firebase-config.js](firebase-config.js).
+2. Push the repository to GitHub.
+3. Enable GitHub Pages from the repository settings.
+4. The included workflow in [.github/workflows/deploy.yml](.github/workflows/deploy.yml) will publish the site automatically on pushes to the main branch.
 
-Since this website is built with pure static files (HTML/CSS/JS), it can be hosted for free on GitHub Pages:
+## Local preview
 
-### Step 1: Initialize Git Local Repository
-Open your terminal in the project directory and run:
+You can preview the site locally by opening the project folder in a browser or serving it with a simple static server, for example:
+
 ```bash
-git init
-git add .
-git commit -m "Initial commit of Taste Restaurant digital menu"
+python -m http.server 8000
 ```
 
-### Step 2: Push to GitHub
-1. Create a new repository on GitHub (e.g., `taste-menu`).
-2. Link your local repo to GitHub and push your code:
-   ```bash
-   git remote add origin https://github.com/YOUR_USERNAME/taste-menu.git
-   git branch -M main
-   git push -u origin main
-   ```
+Then visit http://127.0.0.1:8000/.
 
-### Step 3: Enable GitHub Pages
-1. Go to your repository settings on GitHub.
-2. In the sidebar, select **Pages** (under the "Code and automation" section).
-3. Under **Build and deployment**, set the source to **Deploy from a branch**.
-4. Select the `main` branch and folder `/ (root)`, then click **Save**.
-5. After a few minutes, your site will be live at `https://YOUR_USERNAME.github.io/taste-menu/`!
-6. The QR code at the bottom of the webpage will automatically update to point to your live URL.

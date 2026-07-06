@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taste Restaurant - Admin Console</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Cropper.js for image editing -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+    
+    <!-- Admin Dashboard Styles -->
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin-body">
+
+    <!-- Screen Loader -->
+    <div id="admin-loader" class="admin-loader">
+        <div class="loader-spinner"></div>
+    </div>
+
+    <!-- 1. AUTHENTICATION SECTION (Login Screen) -->
+    <div id="login-container" class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <img src="assets/logo.svg" alt="Logo" class="login-logo" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=150&q=80'">
+                <h2>Admin Login</h2>
+                <p>Taste Restaurant Management Portal</p>
+            </div>
+            
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">Email Address</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-envelope"></i>
+                        <input type="email" id="login-email" placeholder="admin@restaurant.com" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" id="login-password" placeholder="••••••••" required>
+                    </div>
+                </div>
+
+                <div id="login-error" class="login-error hidden"></div>
+                
+                <button type="submit" class="btn-admin-primary">
+                    <span>Login Securely</span>
+                    <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                </button>
+            </form>
+            <div class="login-footer">
+                <p>Protected by Firebase Authentication & SSL.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. MAIN DASHBOARD SECTION -->
+    <div id="dashboard-container" class="dashboard-container hidden">
+        
+        <!-- Mobile Header Bar -->
+        <header class="mobile-admin-header">
+            <button id="sidebar-toggle" class="sidebar-toggle-btn" aria-label="Toggle Navigation">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <div class="mobile-logo-text">Taste Admin</div>
+            <div class="mobile-user-status">
+                <i class="fa-solid fa-circle-user"></i>
+            </div>
+        </header>
+
+        <!-- Sidebar Navigation -->
+        <aside id="admin-sidebar" class="admin-sidebar">
+            <div class="sidebar-brand">
+                <img id="sidebar-logo" src="assets/logo.svg" alt="Brand Logo" class="brand-logo" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=150&q=80'">
+                <div class="brand-info">
+                    <h3 id="sidebar-brand-name">Taste Console</h3>
+                    <span id="admin-user-role" class="user-badge">Admin</span>
+                </div>
+                <button id="sidebar-close" class="sidebar-close-btn" title="Close sidebar" aria-label="Close sidebar"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-tab="tab-overview">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Overview</span>
+                </button>
+                <button class="nav-item" data-tab="tab-categories">
+                    <i class="fa-solid fa-folder-tree"></i>
+                    <span>Categories</span>
+                </button>
+                <button class="nav-item" data-tab="tab-items">
+                    <i class="fa-solid fa-utensils"></i>
+                    <span>Menu Items</span>
+                </button>
+                <button class="nav-item" data-tab="tab-settings">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span>Restaurant Settings</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <i class="fa-solid fa-circle-user avatar-icon"></i>
+                    <span id="user-email-display">admin@taste.com</span>
+                </div>
+                <button id="logout-btn" class="btn-logout">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Sign Out</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Panel Content -->
+        <main class="admin-main-panel">
+            
+            <!-- A. Overview Dashboard Tab -->
+            <section id="tab-overview" class="tab-content active">
+                <div class="panel-header">
+                    <h2>Overview Dashboard</h2>
+                    <p>Real-time analytics and statistics for your digital menu.</p>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon-wrapper view-icon"><i class="fa-solid fa-eye"></i></div>
+                        <div class="stat-data">
+                            <span class="stat-label">Total Menu Views</span>
+                            <h3 id="stat-total-views">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon-wrapper order-icon"><i class="fa-solid fa-whatsapp"></i></div>
+                        <div class="stat-data">
+                            <span class="stat-label">WhatsApp Checkouts</span>
+                            <h3 id="stat-total-orders">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon-wrapper items-icon"><i class="fa-solid fa-utensils"></i></div>
+                        <div class="stat-data">
+                            <span class="stat-label">Active Menu Items</span>
+                            <h3 id="stat-active-items">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon-wrapper billing-icon"><i class="fa-solid fa-award"></i></div>
+                        <div class="stat-data">
+                            <span class="stat-label">Subscription Plan</span>
+                            <h3 id="stat-subscription-status" class="status-badge-active">Trial</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Views Charts / List -->
+                <div class="dashboard-row">
+                    <div class="dashboard-col col-8">
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h3>Most Popular Dishes</h3>
+                                <p>Dishes with the highest number of click-to-orders.</p>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="admin-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Dish Name</th>
+                                                <th>Category</th>
+                                                <th>Price</th>
+                                                <th>WhatsApp Clicks</th>
+                                                <th>Views</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="popular-items-list">
+                                            <!-- Dynamically populated -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-col col-4">
+                        <div class="dashboard-card quick-qr-card">
+                            <div class="card-header">
+                                <h3>Your QR Code</h3>
+                                <p>Print or download your digital menu's QR code.</p>
+                            </div>
+                            <div class="card-body qr-panel-body">
+                                <div class="qr-preview-container">
+                                    <img id="admin-qr-img" src="" alt="Menu QR Code">
+                                </div>
+                                <button id="download-qr-btn" class="btn-admin-secondary btn-full">
+                                    <i class="fa-solid fa-download"></i>
+                                    <span>Download High-Res QR</span>
+                                </button>
+                                <a id="view-live-menu-btn" href="#" target="_blank" class="btn-admin-primary btn-full mt-10">
+                                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                    <span>View Live Menu</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- B. Categories Tab -->
+            <section id="tab-categories" class="tab-content">
+                <div class="panel-header flex-header">
+                    <div>
+                        <h2>Manage Categories</h2>
+                        <p>Create, edit, delete, and reorder categories. Drag and drop rows to reorder.</p>
+                    </div>
+                    <button class="btn-admin-primary" onclick="openAddCategoryModal()">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Add Category</span>
+                    </button>
+                </div>
+
+                <div class="dashboard-card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th class="table-col-sort">Sort</th>
+                                        <th>Category ID</th>
+                                        <th>Name (English)</th>
+                                        <th>Name (Arabic)</th>
+                                        <th class="table-col-actions">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="categories-table-body" class="sortable-target">
+                                    <!-- Populated dynamically via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- C. Menu Items Tab -->
+            <section id="tab-items" class="tab-content">
+                <div class="panel-header flex-header">
+                    <div>
+                        <h2>Manage Menu Items</h2>
+                        <p>Create, edit, duplicate, toggle status, and delete food items. Drag rows to reorder.</p>
+                    </div>
+                    <div class="header-actions">
+                       
+                        <select id="items-category-filter" class="admin-select select-inline" title="Filter items by category" aria-label="Filter items by category">
+                            <option value="all">Filter by Category: All</option>
+                            <!-- Dynamically populated options -->
+                        </select>
+                    </div>
+                </div>
+
+                <div class="dashboard-card">
+                     <button class="btn-admin-primary" onclick="openAddItemModal()">
+                            <i class="fa-solid fa-plus" style="margin-right: 2px; "></i>
+                            <span>Add Food Item</span>
+                        </button>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th class="table-col-sort">Sort</th>
+                                        <th class="table-col-image">Image</th>
+                                        <th>Name (English)</th>
+                                        <th>Name (Arabic)</th>
+                                        <th>Category</th>
+                                        <th>Price</th>
+                                        <th class="table-col-status">Status</th>
+                                        <th class="table-col-actions">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="items-table-body" class="sortable-target">
+                                    <!-- Populated dynamically via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- D. Settings Tab -->
+            <section id="tab-settings" class="tab-content">
+                <div class="panel-header">
+                    <h2>Restaurant Settings</h2>
+                    <p>Customize branding details, working hours, and primary colors.</p>
+                </div>
+
+                <form id="settings-form">
+                    <div class="settings-grid">
+                        
+                        <!-- Left Block: Core fields -->
+                        <div class="settings-column">
+                            <div class="dashboard-card mb-24">
+                                <div class="card-header"><h3>General Settings</h3></div>
+                                <div class="card-body">
+                                    <div class="form-row">
+                                        <div class="form-group col-6">
+                                            <label for="settings-name-en">Restaurant Name (English)</label>
+                                            <input type="text" id="settings-name-en" class="admin-input" required>
+                                        </div>
+                                        <div class="form-group col-6">
+                                            <label for="settings-name-ar">Restaurant Name (Arabic)</label>
+                                            <input type="text" id="settings-name-ar" class="admin-input" required dir="rtl">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group col-6">
+                                            <label for="settings-slogan-en">Slogan (English)</label>
+                                            <input type="text" id="settings-slogan-en" class="admin-input">
+                                        </div>
+                                        <div class="form-group col-6">
+                                            <label for="settings-slogan-ar">Slogan (Arabic)</label>
+                                            <input type="text" id="settings-slogan-ar" class="admin-input" dir="rtl">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group col-6">
+                                            <label for="settings-whatsapp">WhatsApp Ordering Phone Number</label>
+                                            <input type="text" id="settings-whatsapp" class="admin-input" placeholder="+970599123456" required>
+                                            <small class="form-tip">Must include international code (e.g. +970599123456)</small>
+                                        </div>
+                                        <div class="form-group col-6">
+                                            <label for="settings-email">Contact Email</label>
+                                            <input type="email" id="settings-email" class="admin-input" placeholder="info@tasterestaurant.com">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group col-6">
+                                            <label for="settings-hours-en">Working Hours (English)</label>
+                                            <input type="text" id="settings-hours-en" class="admin-input" placeholder="Saturday - Friday (12:00 PM - 12:00 AM)">
+                                        </div>
+                                        <div class="form-group col-6">
+                                            <label for="settings-hours-ar">Working Hours (Arabic)</label>
+                                            <input type="text" id="settings-hours-ar" class="admin-input" placeholder="السبت - الجمعة (12:00 ظهراً - 12:00 ليلاً)" dir="rtl">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group col-6">
+                                            <label for="settings-currency-en">Currency Abbr (English)</label>
+                                            <input type="text" id="settings-currency-en" class="admin-input" placeholder="JD" required>
+                                        </div>
+                                        <div class="form-group col-6">
+                                            <label for="settings-currency-ar">Currency Abbr (Arabic)</label>
+                                            <input type="text" id="settings-currency-ar" class="admin-input" placeholder="دينار" required dir="rtl">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group col-6">
+                                            <label for="settings-address-en">Address (English)</label>
+                                            <input type="text" id="settings-address-en" class="admin-input" placeholder="Ramallah, Palestine">
+                                        </div>
+                                        <div class="form-group col-6">
+                                            <label for="settings-address-ar">Address (Arabic)</label>
+                                            <input type="text" id="settings-address-ar" class="admin-input" placeholder="رام الله، فلسطين" dir="rtl">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Block: Styling & Logo upload & Portability -->
+                        <div class="settings-column">
+                            <!-- Logo and Style -->
+                            <div class="dashboard-card mb-24">
+                                <div class="card-header"><h3>Branding & Theme Styling</h3></div>
+                                <div class="card-body">
+                                    <div class="form-group">
+                                        <label>Restaurant Logo</label>
+                                        <div class="logo-upload-wrapper">
+                                            <img id="settings-logo-preview" src="assets/logo.svg" alt="Logo Preview" class="logo-preview-box" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=150&q=80'">
+                                            <div class="logo-upload-actions">
+                                                <input type="file" id="settings-logo-input" class="hidden-input" accept="image/*" aria-label="Upload logo" title="Upload logo">
+                                                <button type="button" class="btn-admin-secondary" onclick="document.getElementById('settings-logo-input').click()">
+                                                    <i class="fa-solid fa-camera"></i>
+                                                    <span>Upload Logo</span>
+                                                </button>
+                                                <span class="file-info">Maximum file size: 2MB.</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="settings-subscription-status">Subscription Status</label>
+                                        <select id="settings-subscription-status" class="admin-select">
+                                            <option value="active">Active</option>
+                                            <option value="trial">Trial</option>
+                                            <option value="expired">Expired</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group col-6">
+                                            <label for="settings-portal-role">Access Role</label>
+                                            <select id="settings-portal-role" class="admin-select">
+                                                <option value="super_admin">Super Admin</option>
+                                                <option value="restaurant_admin">Restaurant Admin</option>
+                                                <option value="staff_editor">Staff Editor</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group col-6">
+                                            <label for="settings-custom-domain">Custom Domain</label>
+                                            <input type="text" id="settings-custom-domain" class="admin-input" placeholder="https://menu.example.com">
+                                            <small class="form-tip">Reserved for future custom domain deployment.</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="checkbox-label-block" for="settings-dark-mode">Dashboard Dark Mode</label>
+                                        <div class="toggle-switch-wrapper">
+                                            <input type="checkbox" id="settings-dark-mode" checked>
+                                            <label for="settings-dark-mode" class="toggle-slider-btn"></label>
+                                            <span class="toggle-label-text">Enabled</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="color-picker-row">
+                                        <div class="color-picker-item">
+                                            <label for="settings-color-bg">Background</label>
+                                            <input type="color" id="settings-color-bg" value="#0A0A0A">
+                                        </div>
+                                        <div class="color-picker-item">
+                                            <label for="settings-color-surface">Surface Card</label>
+                                            <input type="color" id="settings-color-surface" value="#121212">
+                                        </div>
+                                        <div class="color-picker-item">
+                                            <label for="settings-color-gold">Gold Accent</label>
+                                            <input type="color" id="settings-color-gold" value="#D4AF37">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Data portability -->
+                            <div class="dashboard-card">
+                                <div class="card-header"><h3>Backup & Data Portability</h3></div>
+                                <div class="card-body backups-panel">
+                                    <p class="section-tip">Export all menu items and categories as a single JSON file, or restore data using a valid exported JSON file.</p>
+                                    <div class="backup-actions">
+                                        <button type="button" id="btn-export-json" class="btn-admin-secondary">
+                                            <i class="fa-solid fa-download"></i>
+                                            <span>Export Menu JSON</span>
+                                        </button>
+                                        <input type="file" id="import-json-input" class="hidden-input" accept=".json" aria-label="Import JSON menu" title="Import JSON menu">
+                                        <button type="button" class="btn-admin-secondary" onclick="document.getElementById('import-json-input').click()">
+                                            <i class="fa-solid fa-upload"></i>
+                                            <span>Import Menu JSON</span>
+                                        </button>
+                                    </div>
+                                    <button type="button" id="btn-db-backup" class="btn-admin-secondary btn-full mt-10">
+                                      <i class="fa-solid fa-database"></i>
+                                      <span>Create Live Cloud Backup</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sticky Save Bar -->
+                    <div class="settings-save-bar">
+                        <button type="submit" class="btn-admin-primary">
+                            <i class="fa-solid fa-floppy-disk"></i>
+                            <span>Save Restaurant Config</span>
+                        </button>
+                    </div>
+                </form>
+            </section>
+        </main>
+    </div>
+
+    <!-- ==========================================================================
+       MODALS SECTION
+       ========================================================================== -->
+
+    <!-- A. Item Form Modal (Add / Edit) -->
+    <div id="modal-item" class="modal-overlay">
+        <div class="modal-card modal-lg">
+            <div class="modal-header">
+                <h3 id="item-modal-title">Add Menu Item</h3>
+                <button class="modal-close-btn" title="Close dialog" aria-label="Close dialog" onclick="closeItemModal()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="item-form">
+                <input type="hidden" id="item-edit-id">
+                <div class="modal-body">
+                    
+                    <!-- Names row -->
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label for="item-name-en">Dish Name (English)</label>
+                            <input type="text" id="item-name-en" class="admin-input" placeholder="e.g. Truffle Burger" required>
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="item-name-ar">Dish Name (Arabic)</label>
+                            <input type="text" id="item-name-ar" class="admin-input" placeholder="مثال: برغر الترافل" required dir="rtl">
+                        </div>
+                    </div>
+
+                    <!-- Descriptions row -->
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label for="item-desc-en">Description (English)</label>
+                            <textarea id="item-desc-en" class="admin-textarea" rows="3" placeholder="Describe the ingredients..." required></textarea>
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="item-desc-ar">Description (Arabic)</label>
+                            <textarea id="item-desc-ar" class="admin-textarea" rows="3" placeholder="وصف المكونات والنكهة..." required dir="rtl"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Category and Price row -->
+                    <div class="form-row">
+                        <div class="form-group col-4">
+                            <label for="item-category">Category</label>
+                            <select id="item-category" class="admin-select" required>
+                                <!-- Categories loaded dynamically -->
+                            </select>
+                        </div>
+                        <div class="form-group col-4">
+                            <label for="item-price">Price</label>
+                            <input type="number" id="item-price" class="admin-input" step="0.01" min="0" placeholder="8.00" required>
+                        </div>
+                        <div class="form-group col-4">
+                            <label for="item-available" class="checkbox-label-block">Availability Status</label>
+                            <div class="toggle-switch-wrapper">
+                                <input type="checkbox" id="item-available" checked>
+                                <label for="item-available" class="toggle-slider-btn"></label>
+                                <span class="toggle-label-text">In Stock</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tags row -->
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label for="item-tags-en">Tags (English) - Comma Separated</label>
+                            <input type="text" id="item-tags-en" class="admin-input" placeholder="e.g. New, Spicy, Chef Special">
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="item-tags-ar">Tags (Arabic) - Comma Separated</label>
+                            <input type="text" id="item-tags-ar" class="admin-input" placeholder="مثال: جديد، حار، مميز" dir="rtl">
+                        </div>
+                    </div>
+
+                    <!-- Image Upload -->
+                    <div class="form-group">
+                        <label>Dish Image</label>
+                        <div class="dish-image-picker">
+                            <img id="item-img-preview" src="assets/logo.svg" alt="Item Image" class="item-img-preview-box" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=150&q=80'">
+                            <div class="image-picker-actions">
+                                <input type="file" id="item-image-input" class="hidden-input" accept="image/*" aria-label="Upload item image" title="Upload item image">
+                                <button type="button" class="btn-admin-secondary" onclick="document.getElementById('item-image-input').click()">
+                                    <i class="fa-solid fa-image"></i>
+                                    <span>Upload & Crop Image</span>
+                                </button>
+                                <span class="file-info">Optimized automatically before uploading.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn-admin-secondary" onclick="closeItemModal()">Cancel</button>
+                    <button type="submit" class="btn-admin-primary">
+                        <i class="fa-solid fa-check"></i>
+                        <span>Save Item</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- B. Category Form Modal (Add / Edit) -->
+    <div id="modal-category" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="category-modal-title">Add Category</h3>
+                <button class="modal-close-btn" title="Close dialog" aria-label="Close dialog" onclick="closeCategoryModal()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="category-form">
+                <input type="hidden" id="category-edit-id">
+                <input type="hidden" id="category-order-index">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="category-id-val">Unique ID (English URL Slug)</label>
+                        <input type="text" id="category-id-val" class="admin-input" placeholder="e.g. burgers" required>
+                        <small class="form-tip">Alphanumeric lowercase only (e.g. burgers, drinks, local-sides)</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category-name-en">Category Name (English)</label>
+                        <input type="text" id="category-name-en" class="admin-input" placeholder="e.g. Burgers" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category-name-ar">Category Name (Arabic)</label>
+                        <input type="text" id="category-name-ar" class="admin-input" placeholder="مثال: البرغر" required dir="rtl">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-admin-secondary" onclick="closeCategoryModal()">Cancel</button>
+                    <button type="submit" class="btn-admin-primary">
+                        <i class="fa-solid fa-check"></i>
+                        <span>Save Category</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- C. Image Cropping Modal -->
+    <div id="modal-cropper" class="modal-overlay modal-cropper-overlay">
+        <div class="modal-card modal-cropper-card">
+            <div class="modal-header">
+                <h3>Crop Image</h3>
+                <button type="button" class="modal-close-btn" title="Close dialog" aria-label="Close dialog" onclick="closeCropperModal()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body cropper-body">
+                <div class="cropper-container">
+                    <img id="cropper-target-img" src="" alt="Target Image">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-admin-secondary" onclick="closeCropperModal()">Cancel</button>
+                <button type="button" id="btn-crop-save" class="btn-admin-primary">
+                    <i class="fa-solid fa-crop"></i>
+                    <span>Apply Crop & Optimize</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- D. Custom Styled Confirmation Modal -->
+    <div id="modal-confirm" class="modal-overlay modal-confirm-overlay">
+        <div class="modal-card modal-confirm-card">
+            <div class="modal-body text-center">
+                <i class="fa-solid fa-circle-exclamation warning-icon"></i>
+                <h3 id="confirm-title">Are you sure?</h3>
+                <p id="confirm-message">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer flex-center">
+                <button type="button" id="confirm-cancel-btn" class="btn-admin-secondary">Cancel</button>
+                <button type="button" id="confirm-action-btn" class="btn-admin-danger">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Controller Logic -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script type="module" src="admin.js"></script>
+</body>
+</html>

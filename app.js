@@ -1,167 +1,133 @@
 /**
  * Taste Restaurant - Premium Digital Menu Web App
- * Features: Bilingual Toggle (EN/AR RTL), Search Filter, Category Navigation, Cart Drawer, WhatsApp Order
+ * Real-time sync with Firestore for menu data and analytics.
  */
 
-// 1. Menu Items Database
-const menuItems = [
+import { db, initError, isFirebaseReady } from "./firebase-config.js";
+import { 
+    doc, 
+    collection, 
+    onSnapshot, 
+    updateDoc, 
+    increment, 
+    query, 
+    orderBy 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// ==========================================================================
+// 1. Default display data (used only when Firestore has no data yet)
+// ==========================================================================
+const fallbackRestaurant = {
+    name: { en: "Taste Restaurant", ar: "مطعم تيست" },
+    slogan: { en: "Fresh & Delicious Every Day", ar: "طازج ولذيذ كل يوم" },
+    whatsappNumber: "+970599123456",
+    logoUrl: "assets/logo.svg",
+    colors: { bg: "#0A0A0A", surface: "#121212", gold: "#D4AF37" },
+    workingHours: { en: "Saturday - Friday (12:00 PM - 12:00 AM)", ar: "السبت - الجمعة (12:00 ظهراً - 12:00 ليلاً)" },
+    currency: { en: "JD", ar: "دينار" },
+    address: { en: "Ramallah, Palestine", ar: "رام الله، فلسطين" },
+    subscription: { status: "active" }
+};
+
+const fallbackCategories = [
+    { id: "burgers", name: { en: "Burgers", ar: "البرغر" }, orderIndex: 0 },
+    { id: "pizza", name: { en: "Pizza", ar: "البيتزا" }, orderIndex: 1 },
+    { id: "drinks", name: { en: "Drinks", ar: "المشروبات" }, orderIndex: 2 },
+    { id: "desserts", name: { en: "Desserts", ar: "الحلويات" }, orderIndex: 3 }
+];
+
+const fallbackItems = [
     {
         id: "truffle-burger",
-        category: "burgers",
+        categoryId: "burgers",
         price: 8.0,
-        image: "assets/truffle_burger.png",
-        name: {
-            en: "Truffle Burger",
-            ar: "برغر الترفل"
-        },
-        description: {
-            en: "Juicy Angus beef, premium black truffle aioli, melted Swiss cheese, and caramelized onions on a toasted brioche bun.",
-            ar: "لحم أنجوس مشوي، صلصة الترافل الأسود الفاخرة، جبن سويسري ذائب، وبصل مكرمل في خبز البريوش الطازج."
-        },
-        tags: {
-            en: ["Premium", "Chef's Special"],
-            ar: ["فاخر", "مميز"]
-        }
+        image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80",
+        name: { en: "Truffle Burger", ar: "برغر الترفل" },
+        description: { en: "Juicy Angus beef, premium black truffle aioli, melted Swiss cheese, and caramelized onions on a toasted brioche bun.", ar: "لحم أنجوس مشوي، صلصة الترافل الأسود الفاخرة، جبن سويسري ذائب، وبصل مكرمل في خبز البريوش الطازج." },
+        tags: { en: ["Premium", "Chef Special"], ar: ["فاخر", "مميز"] },
+        isAvailable: true
     },
     {
         id: "cheese-burger",
-        category: "burgers",
+        categoryId: "burgers",
         price: 7.0,
-        image: "assets/cheese_burger.png",
-        name: {
-            en: "Cheese Burger",
-            ar: "برغر الجبن"
-        },
-        description: {
-            en: "Premium beef patty, melting cheddar cheese, fresh crisp lettuce, vine-ripened tomatoes, and our signature special sauce.",
-            ar: "شريحة لحم بقري فاخر، جبنة شيدر ذائبة، خس طازج، طماطم، وصلصة تيست الخاصة."
-        },
-        tags: {
-            en: ["Classic"],
-            ar: ["كلاسيكي"]
-        }
+        image: "https://images.unsplash.com/photo-1550547660-9454987c1f0f?auto=format&fit=crop&w=600&q=80",
+        name: { en: "Cheese Burger", ar: "برغر الجبن" },
+        description: { en: "Premium beef patty, melting cheddar cheese, fresh crisp lettuce, vine-ripened tomatoes, and our signature special sauce.", ar: "شريحة لحم بقري فاخر، جبنة شيدر ذائبة، خس طازج، طماطم، وصلصة تيست الخاصة." },
+        tags: { en: ["Classic"], ar: ["كلاسيكي"] },
+        isAvailable: true
     },
     {
         id: "margherita-pizza",
-        category: "pizza",
+        categoryId: "pizza",
         price: 9.0,
-        image: "assets/margherita_pizza.png",
-        name: {
-            en: "Margherita Pizza",
-            ar: "بيتزا مارغريتا"
-        },
-        description: {
-            en: "Artisan pizza crust topped with rich tomato sauce, fresh buffalo mozzarella, aromatic fresh basil leaves, and a drizzle of extra virgin olive oil.",
-            ar: "عجينة البيتزا الحرفية تعلوها صلصة الطماطم الغنية، جبنة الموزاريلا الطازجة، أوراق الريحان العطرية ورشة من زيت الزيتون البكر."
-        },
-        tags: {
-            en: ["Vegetarian", "Artisan"],
-            ar: ["نباتي", "حرفية"]
-        }
+        image: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=600&q=80",
+        name: { en: "Margherita Pizza", ar: "بيتزا مارغريتا" },
+        description: { en: "Artisan pizza crust topped with rich tomato sauce, fresh buffalo mozzarella, aromatic fresh basil leaves, and a drizzle of extra virgin olive oil.", ar: "عجينة البيتزا الحرفية تعلوها صلصة الطماطم الغنية، جبنة الموزاريلا الطازجة، أوراق الريحان العطرية ورشة من زيت الزيتون البكر." },
+        tags: { en: ["Vegetarian", "Artisan"], ar: ["نباتي", "حرفية"] },
+        isAvailable: true
     },
     {
         id: "pepperoni-pizza",
-        category: "pizza",
+        categoryId: "pizza",
         price: 10.0,
-        image: "assets/pepperoni_pizza.png",
-        name: {
-            en: "Pepperoni Pizza",
-            ar: "بيتزا بيبروني"
-        },
-        description: {
-            en: "Classic Italian crust loaded with premium spicy beef pepperoni, mozzarella cheese, fresh oregano, and an optional touch of hot honey.",
-            ar: "عجينة إيطالية كلاسيكية مغطاة بقطع البيبروني البقري الحار، جبنة الموزاريلا، الأوريغانو الطازج مع لمسة عسل حار اختيارية."
-        },
-        tags: {
-            en: ["Spicy"],
-            ar: ["حار"]
-        }
+        image: "https://images.unsplash.com/photo-1628840042765-356cda07504e?auto=format&fit=crop&w=600&q=80",
+        name: { en: "Pepperoni Pizza", ar: "بيتزا بيبروني" },
+        description: { en: "Classic Italian crust loaded with premium spicy beef pepperoni, mozzarella cheese, fresh oregano, and an optional touch of hot honey.", ar: "عجينة إيطالية كلاسيكية مغطاة بقطع البيبروني البقري الحار، جبنة الموزاريلا، الأوريغانو الطازج مع لمسة عسل حار اختيارية." },
+        tags: { en: ["Spicy"], ar: ["حار"] },
+        isAvailable: true
     },
     {
         id: "golden-mojito",
-        category: "drinks",
+        categoryId: "drinks",
         price: 3.0,
-        image: "assets/golden_mojito.png",
-        name: {
-            en: "Golden Mojito",
-            ar: "موهيتو ذهبي"
-        },
-        description: {
-            en: "A refreshing blend of fresh lime, wild mint, sparkling club soda, and edible 24K gold flakes for a touch of luxury.",
-            ar: "مزيج منعش من الليمون الأخضر، النعناع البري، صودا فوارة ورقاقات الذهب عيار 24 القابلة للأكل لمسة من الفخامة."
-        },
-        tags: {
-            en: ["Signature", "Cold"],
-            ar: ["توقيعنا", "بارد"]
-        }
+        image: "https://images.unsplash.com/photo-1551538827-9b03706baf00?auto=format&fit=crop&w=600&q=80",
+        name: { en: "Golden Mojito", ar: "موهيتو ذهبي" },
+        description: { en: "A refreshing blend of fresh lime, wild mint, sparkling club soda, and edible 24K gold flakes for a touch of luxury.", ar: "مزيج منعش من الليمون الأخضر، النعناع البري، صودا فوارة ورقاقات الذهب عيار 24 القابلة للأكل لمسة من الفخامة." },
+        tags: { en: ["Signature", "Cold"], ar: ["توقيعنا", "بارد"] },
+        isAvailable: true
     },
     {
         id: "orange-juice",
-        category: "drinks",
+        categoryId: "drinks",
         price: 2.5,
         image: "https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?auto=format&fit=crop&w=600&q=80",
-        name: {
-            en: "Fresh Orange Juice",
-            ar: "عصير برتقال طازج"
-        },
-        description: {
-            en: "100% freshly squeezed sweet oranges, served chilled on ice. Packed with Vitamin C and natural energy.",
-            ar: "عصير برتقال طبيعي 100% معصور طازجاً، يقدم مبرداً مع الثلج. غني بفيتامين سي والطاقة الطبيعية."
-        },
-        tags: {
-            en: ["Fresh", "Cold"],
-            ar: ["طازج", "بارد"]
-        }
+        name: { en: "Fresh Orange Juice", ar: "عصير برتقال طازج" },
+        description: { en: "100% freshly squeezed sweet oranges, served chilled on ice. Packed with Vitamin C and natural energy.", ar: "عصير برتقال طبيعي 100% معصور طازجاً، يقدم مبرداً مع الثلج. غني بفيتامين سي والطاقة الطبيعية." },
+        tags: { en: ["Fresh"], ar: ["طازج"] },
+        isAvailable: true
     },
     {
         id: "kunafa-cheesecake",
-        category: "desserts",
+        categoryId: "desserts",
         price: 5.0,
         image: "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=600&q=80",
-        name: {
-            en: "Pistachio Kunafa Cheesecake",
-            ar: "تشيز كيك الكنافة بالفستق"
-        },
-        description: {
-            en: "An exquisite fusion of creamy New York cheesecake layered with crispy, golden Arabic kunafa, topped with rich pistachio sauce.",
-            ar: "اندماج فاخر بين التشيز كيك الكريمي الغني وعجينة الكنافة الذهبية المقرمشة، مغطاة بصلصة الفستق الحلبي الفاخرة."
-        },
-        tags: {
-            en: ["Best Seller", "Fusion"],
-            ar: ["الأكثر مبيعاً", "مبتكر"]
-        }
+        name: { en: "Pistachio Kunafa Cheesecake", ar: "تشيز كيك الكنافة بالفستق" },
+        description: { en: "An exquisite fusion of creamy New York cheesecake layered with crispy, golden Arabic kunafa, topped with rich pistachio sauce.", ar: "اندماج فاخر بين التشيز كيك الكريمي الغني وعجينة الكنافة الذهبية المقرمشة، مغطاة بصلصة الفستق الحلبي الفاخرة." },
+        tags: { en: ["Best Seller", "Fusion"], ar: ["الأكثر مبيعاً", "مبتكر"] },
+        isAvailable: true
     },
     {
         id: "lava-cake",
-        category: "desserts",
+        categoryId: "desserts",
         price: 4.0,
         image: "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=600&q=80",
-        name: {
-            en: "Chocolate Lava Cake",
-            ar: "كيك الشوكولاتة البركانية"
-        },
-        description: {
-            en: "Warm chocolate cake with a molten, liquid chocolate center, lightly dusted with cocoa and served with premium vanilla ice cream.",
-            ar: "كيك الشوكولاتة الدافئ مع قلب من الشوكولاتة السائلة الذائبة، مرشوش بالكاكاو ويقدم مع آيس كريم الفانيليا الفاخر."
-        },
-        tags: {
-            en: ["Warm", "Sweet"],
-            ar: ["دافئ", "حلو"]
-        }
+        name: { en: "Chocolate Lava Cake", ar: "كيك الشوكولاتة البركانية" },
+        description: { en: "Warm chocolate cake with a molten, liquid chocolate center, lightly dusted with cocoa and served with premium vanilla ice cream.", ar: "كيك الشوكولاتة الدافئ مع قلب من الشوكولاتة السائلة الذائبة، مرشوش بالكاكاو ويقدم مع آيس كريم الفانيليا الفاخر." },
+        tags: { en: ["Warm"], ar: ["دافئ"] },
+        isAvailable: true
     }
 ];
 
-// 2. Bilingual Static Translations Dictionary
+// ==========================================================================
+// 2. Translations Dictionary
+// ==========================================================================
 const translations = {
     en: {
         title: "Taste Restaurant - Premium Digital Menu",
         slogan: "Fresh & Delicious Every Day",
         searchPlaceholder: "Search menu items...",
         catAll: "All Menu",
-        catBurgers: "Burgers",
-        catPizza: "Pizza",
-        catDrinks: "Drinks",
-        catDesserts: "Desserts",
         itemsFound: "items found",
         noItemsTitle: "No items found",
         noItemsDesc: "Try searching for something else or browse other categories.",
@@ -182,18 +148,16 @@ const translations = {
         addToOrder: "Add to Order",
         currency: "JD",
         itemAdded: "Item added to your order!",
-        singleOrderText: "Hello Taste Restaurant, I would like to order: 1 x {item} ({price} JD). Please confirm.",
-        whatsappNumber: "+970599123456"
+        singleOrderText: "Hello, I would like to order: 1 x {item} ({price} {currency}). Please confirm.",
+        menuOfflineTitle: "Menu Temporarily Offline",
+        menuOfflineDesc: "This digital menu is temporarily unavailable. Please contact the restaurant administration.",
+        outOfStock: "Out of Stock"
     },
     ar: {
         title: "مطعم تيست - قائمة الطعام الرقمية المميزة",
         slogan: "طازج ولذيذ كل يوم",
         searchPlaceholder: "ابحث عن طبق...",
         catAll: "القائمة الكاملة",
-        catBurgers: "البرغر",
-        catPizza: "البيتزا",
-        catDrinks: "المشروبات",
-        catDesserts: "الحلويات",
         itemsFound: "أطباق متوفرة",
         noItemsTitle: "لم يتم العثور على أطباق",
         noItemsDesc: "حاول البحث عن شيء آخر أو تصفح فئات أخرى.",
@@ -214,23 +178,35 @@ const translations = {
         addToOrder: "أضف للطلب",
         currency: "دينار",
         itemAdded: "تمت إضافة الطبق لطلبك!",
-        singleOrderText: "مرحباً مطعم تيست، أود طلب: 1 x {item} بسعر ({price} دينار). يرجى تأكيد الطلب.",
-        whatsappNumber: "+970599123456"
+        singleOrderText: "مرحباً، أود طلب: 1 x {item} بسعر ({price} {currency}). يرجى تأكيد الطلب.",
+        menuOfflineTitle: "قائمة الطعام متوقفة مؤقتاً",
+        menuOfflineDesc: "هذه القائمة متوقفة حالياً عن العمل. يرجى مراجعة إدارة المطعم.",
+        outOfStock: "غير متوفر"
     }
 };
 
-// 3. Application State
+// ==========================================================================
+// 3. Dynamic State Variables
+// ==========================================================================
 let currentLanguage = "en";
 let currentCategory = "all";
 let searchQuery = "";
 let cart = [];
 
+// Restaurant config data loaded from DB (or fallback)
+let restaurantConfig = { ...fallbackRestaurant };
+let categoriesList = [ ...fallbackCategories ];
+let menuItemsList = [ ...fallbackItems ];
+let activeRestaurantId = "taste";
+
 // DOM Elements
+const screenLoader = document.getElementById("screen-loader");
+const expiredScreen = document.getElementById("expired-screen");
 const menuGrid = document.getElementById("menu-grid");
 const emptyState = document.getElementById("empty-state");
 const searchInput = document.getElementById("menu-search");
 const searchClear = document.getElementById("search-clear");
-const categoryBtns = document.querySelectorAll(".category-btn");
+const categoryBtnsBar = document.getElementById("dynamic-categories-bar");
 const currentCategoryTitle = document.getElementById("current-category-title");
 const itemsCountDisplay = document.getElementById("items-count");
 const langToggle = document.getElementById("lang-toggle");
@@ -250,65 +226,272 @@ const floatingCartBadge = document.getElementById("floating-cart-badge");
 // QR Code DOM Element
 const qrCodeImg = document.getElementById("qr-code-img");
 
-// Initialize Website
+// ==========================================================================
+// 4. Initialisation
+// ==========================================================================
 document.addEventListener("DOMContentLoaded", () => {
-    // Check local storage for language preference
+    const urlParams = new URLSearchParams(window.location.search);
+    const rParam = urlParams.get("r");
+    if (rParam && rParam.trim() !== "") {
+        activeRestaurantId = rParam.toLowerCase().trim();
+    }
+
     const savedLanguage = localStorage.getItem("tasteMenuLang");
     if (savedLanguage && (savedLanguage === "en" || savedLanguage === "ar")) {
         currentLanguage = savedLanguage;
     } else {
-        // Auto detect browser language
         const browserLang = navigator.language.substring(0, 2);
         currentLanguage = browserLang === "ar" ? "ar" : "en";
     }
 
-    // Set Initial Language UI
-    applyLanguage(currentLanguage);
-    
-    // Load Cart from localStorage
     loadCartFromStorage();
-    
-    // Setup Listeners
+
+    if (!isFirebaseReady || !db) {
+        console.error("Firestore unavailable:", initError);
+        applyRestaurantConfig(fallbackRestaurant);
+        applyCategories(fallbackCategories);
+        applyMenuItems(fallbackItems);
+        hideLoader();
+    } else {
+        syncWithFirestore();
+    }
+
     setupEventListeners();
-    
-    // Setup dynamic QR code
     setupQrCode();
 });
 
-// Setup QR code generation using free dynamic QR API
+// Setup dynamic QR code pointing to active URL
 function setupQrCode() {
     let currentUrl = window.location.href;
-    
-    // Fallback if running on local file system or local server
     if (currentUrl.includes("127.0.0.1") || currentUrl.includes("localhost") || currentUrl.startsWith("file:///")) {
-        currentUrl = "https://taste-restaurant.github.io/";
+        // Fallback for clean QR codes locally
+        currentUrl = `https://taste-restaurant.github.io/?r=${activeRestaurantId}`;
     }
-    
-    // Generate URL: d4af37 (gold color), 0A0A0A (dark background matching footer)
     const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&color=d4af37&bgcolor=060606&data=${encodeURIComponent(currentUrl)}`;
     if (qrCodeImg) {
         qrCodeImg.src = qrApiUrl;
     }
 }
 
-// 4. Translate/Language Manager
+// Hide full-screen load curtain
+function hideLoader() {
+    if (screenLoader && !screenLoader.classList.contains("fade-out")) {
+        screenLoader.classList.add("fade-out");
+    }
+}
+
+// ==========================================================================
+// 5. Firebase Sync Engine
+// ==========================================================================
+function syncWithFirestore() {
+    const restaurantDocRef = doc(db, "restaurants", activeRestaurantId);
+    
+    // 1. Sync Restaurant Settings
+    onSnapshot(restaurantDocRef, (snapshot) => {
+        if (!snapshot.exists()) {
+            console.warn(`Restaurant "${activeRestaurantId}" not found in Firestore. Loading local template...`);
+            applyRestaurantConfig(fallbackRestaurant);
+            hideLoader();
+            return;
+        }
+
+        const data = snapshot.data();
+        
+        // Subscription check
+        if (data.subscription && data.subscription.status === "expired") {
+            showExpiredScreen();
+            hideLoader();
+            return;
+        }
+
+        applyRestaurantConfig(data);
+        
+        // Increment views once per session
+        triggerPageViewTracker();
+        hideLoader();
+    }, (error) => {
+        console.error("Firestore sync error (settings):", error);
+        applyRestaurantConfig(fallbackRestaurant);
+        hideLoader();
+    });
+
+    // 2. Sync Categories (Ordered by orderIndex)
+    const categoriesQuery = query(
+        collection(db, "restaurants", activeRestaurantId, "categories"),
+        orderBy("orderIndex", "asc")
+    );
+    
+    onSnapshot(categoriesQuery, (snapshot) => {
+        const fetchedCats = [];
+        snapshot.forEach(docSnap => {
+            fetchedCats.push({ id: docSnap.id, ...docSnap.data() });
+        });
+
+        if (fetchedCats.length > 0) {
+            applyCategories(fetchedCats);
+        } else {
+            applyCategories(fallbackCategories);
+        }
+    }, (error) => {
+        console.error("Firestore sync error (categories):", error);
+        applyCategories(fallbackCategories);
+    });
+
+    // 3. Sync Menu Items (Ordered by orderIndex)
+    const itemsQuery = query(
+        collection(db, "restaurants", activeRestaurantId, "menu_items"),
+        orderBy("orderIndex", "asc")
+    );
+
+    onSnapshot(itemsQuery, (snapshot) => {
+        const fetchedItems = [];
+        snapshot.forEach(docSnap => {
+            fetchedItems.push({ id: docSnap.id, ...docSnap.data() });
+        });
+
+        if (fetchedItems.length > 0) {
+            applyMenuItems(fetchedItems);
+        } else {
+            applyMenuItems(fallbackItems);
+        }
+    }, (error) => {
+        console.error("Firestore sync error (items):", error);
+        applyMenuItems(fallbackItems);
+    });
+}
+
+// Show subscription expiry screen block
+function showExpiredScreen() {
+    if (expiredScreen) {
+        expiredScreen.classList.remove("hidden");
+    }
+}
+
+// Increment overall restaurant views counter once per session
+function triggerPageViewTracker() {
+    if (!db) return;
+    const viewFlagKey = `tasteMenuViewsTracked_${activeRestaurantId}`;
+    if (!sessionStorage.getItem(viewFlagKey)) {
+        updateDoc(doc(db, "restaurants", activeRestaurantId), {
+            "analytics.views": increment(1)
+        }).then(() => {
+            sessionStorage.setItem(viewFlagKey, "true");
+        }).catch(err => console.error("Error updating views log:", err));
+    }
+}
+
+// Increment WhatsApp checkout clicks
+function triggerWhatsAppClicksTracker() {
+    if (!db) return;
+    updateDoc(doc(db, "restaurants", activeRestaurantId), {
+        "analytics.whatsappOrders": increment(1)
+    }).catch(err => console.error("Error updating analytics:", err));
+}
+
+// Increment specific menu item clicks
+function triggerItemOrderClickTracker(itemId) {
+    if (!db) return;
+    const itemRef = doc(db, "restaurants", activeRestaurantId, "menu_items", itemId);
+    updateDoc(itemRef, {
+        "orderClicks": increment(1),
+        "views": increment(1) // increment views alongside clicks
+    }).catch(err => console.error("Error updating item analytics:", err));
+}
+
+// ==========================================================================
+// 6. Data Binder Controllers
+// ==========================================================================
+function applyRestaurantConfig(data) {
+    restaurantConfig = data;
+
+    // Apply Dynamic Theme Colors
+    const colors = data.colors || {};
+    const dynamicStyle = document.getElementById("dynamic-theme-colors");
+    if (dynamicStyle && colors.bg && colors.gold) {
+        // Generate responsive, custom variables mapping
+        dynamicStyle.innerHTML = `
+            :root {
+                --bg-color: ${colors.bg};
+                --surface-color: ${colors.surface || '#121212'};
+                --surface-card: ${colors.surfaceCard || '#151515'};
+                --gold: ${colors.gold};
+                --gold-dark: ${colors.goldDark || '#aa8c2c'};
+                --gold-light: ${colors.goldLight || 'rgba(212, 175, 55, 0.15)'};
+                --gold-hover: ${colors.goldHover || '#F5D36C'};
+            }
+        `;
+    }
+
+    // Refresh translation templates
+    applyLanguage(currentLanguage);
+}
+
+function applyCategories(cats) {
+    categoriesList = cats;
+    renderCategoriesBar();
+    updateCategoryTitleText();
+}
+
+function applyMenuItems(items) {
+    menuItemsList = items;
+    renderMenuItems();
+}
+
+// ==========================================================================
+// 7. Dynamic Translation Manager
+// ==========================================================================
 function applyLanguage(lang) {
     currentLanguage = lang;
     localStorage.setItem("tasteMenuLang", lang);
 
-    // Update HTML Tag attributes
+    // Apply page direction
     document.documentElement.setAttribute("lang", lang);
     document.documentElement.setAttribute("dir", lang === "ar" ? "rtl" : "ltr");
     
-    // Update Title tag
-    document.title = translations[lang].title;
+    // Header title
+    document.title = restaurantConfig.name[lang] || restaurantConfig.name.en;
 
-    // Toggle Button Styles & Texts
+    // Toggle button globe label
     const langTextEl = langToggle.querySelector(".lang-text");
     if (langTextEl) {
         langTextEl.textContent = lang === "en" ? "العربية" : "English";
     }
     langToggle.setAttribute("data-tooltip", lang === "en" ? "التحويل للعربية" : "Switch to English");
+
+    // Dynamic brand text
+    const brandNameEl = document.getElementById("nav-brand-name");
+    const logoImgEl = document.getElementById("nav-logo-img");
+    if (brandNameEl) brandNameEl.textContent = restaurantConfig.name[lang] || restaurantConfig.name.en;
+    if (logoImgEl && restaurantConfig.logoUrl) logoImgEl.src = restaurantConfig.logoUrl;
+
+    // Hero details
+    const heroName = document.getElementById("hero-restaurant-name");
+    const heroSlogan = document.getElementById("hero-restaurant-slogan");
+    const heroLogo = document.getElementById("hero-logo-img");
+    if (heroName) heroName.textContent = restaurantConfig.name[lang] || restaurantConfig.name.en;
+    if (heroSlogan) heroSlogan.textContent = restaurantConfig.slogan[lang] || restaurantConfig.slogan.en;
+    if (heroLogo && restaurantConfig.logoUrl) heroLogo.src = restaurantConfig.logoUrl;
+
+    // Footer details
+    const footerLogo = document.getElementById("footer-logo-img");
+    const footerName = document.getElementById("footer-restaurant-name");
+    const footerSlogan = document.getElementById("footer-restaurant-slogan");
+    const footerCopyrightName = document.getElementById("footer-copyright-name");
+    
+    const footerHours = document.getElementById("footer-hours-val");
+    const footerPhone = document.getElementById("footer-phone-val");
+    const footerEmail = document.getElementById("footer-email-val");
+    const footerAddress = document.getElementById("footer-address-val");
+
+    if (footerLogo && restaurantConfig.logoUrl) footerLogo.src = restaurantConfig.logoUrl;
+    if (footerName) footerName.textContent = restaurantConfig.name[lang] || restaurantConfig.name.en;
+    if (footerSlogan) footerSlogan.textContent = restaurantConfig.slogan[lang] || restaurantConfig.slogan.en;
+    if (footerCopyrightName) footerCopyrightName.textContent = restaurantConfig.name[lang] || restaurantConfig.name.en;
+    
+    if (footerHours) footerHours.textContent = restaurantConfig.workingHours[lang] || restaurantConfig.workingHours.en;
+    if (footerPhone) footerPhone.textContent = restaurantConfig.whatsappNumber;
+    if (footerEmail) footerEmail.textContent = restaurantConfig.email || "info@tasterestaurant.com";
+    if (footerAddress) footerAddress.textContent = restaurantConfig.address[lang] || restaurantConfig.address.en;
 
     // Scan DOM for elements with translation tags
     document.querySelectorAll("[data-translate]").forEach(elem => {
@@ -318,7 +501,7 @@ function applyLanguage(lang) {
         }
     });
 
-    // Update Placeholders
+    // Update Input Placeholders
     document.querySelectorAll("[data-translate-placeholder]").forEach(elem => {
         const key = elem.getAttribute("data-translate-placeholder");
         if (translations[lang][key]) {
@@ -326,53 +509,120 @@ function applyLanguage(lang) {
         }
     });
 
-    // Translate category active titles dynamically
+    // Update active category text
     updateCategoryTitleText();
 
-    // Render Menu grid items with selected language values
+    // Re-render items
     renderMenuItems();
 
-    // Refresh Cart Rendering to apply dynamic currency translations
+    // Re-render cart with dynamic language labels
     renderCart();
 }
 
 function updateCategoryTitleText() {
-    if (currentCategoryTitle) {
-        const keyMap = {
-            all: "catAll",
-            burgers: "catBurgers",
-            pizza: "catPizza",
-            drinks: "catDrinks",
-            desserts: "catDesserts"
-        };
-        const key = keyMap[currentCategory];
-        currentCategoryTitle.textContent = translations[currentLanguage][key];
+    if (!currentCategoryTitle) return;
+    
+    if (currentCategory === "all") {
+        currentCategoryTitle.textContent = translations[currentLanguage].catAll;
+    } else {
+        const activeCat = categoriesList.find(c => c.id === currentCategory);
+        if (activeCat) {
+            currentCategoryTitle.textContent = activeCat.name[currentLanguage] || activeCat.name.en;
+        } else {
+            currentCategoryTitle.textContent = translations[currentLanguage].catAll;
+        }
     }
 }
 
-// Toggle language event handler
+// Toggle language hook
 function toggleLanguage() {
     const nextLang = currentLanguage === "en" ? "ar" : "en";
     applyLanguage(nextLang);
 }
 
-// 5. Render Menu Items Grid
+// ==========================================================================
+// 8. Category UI Renderer
+// ==========================================================================
+function renderCategoriesBar() {
+    if (!categoryBtnsBar) return;
+    categoryBtnsBar.innerHTML = "";
+    
+    const lang = currentLanguage;
+    
+    categoriesList.forEach(cat => {
+        const btn = document.createElement("button");
+        btn.className = `category-btn ${currentCategory === cat.id ? 'active' : ''}`;
+        btn.setAttribute("data-category", cat.id);
+        
+        // Match icon dynamically if possible or use standard dot/chevron icon
+        let iconHtml = '<i class="fa-solid fa-circle-dot"></i>';
+        
+        // Basic match mappings
+        const idLower = cat.id.toLowerCase();
+        if (idLower.includes("burger")) iconHtml = '<i class="fa-solid fa-hamburger"></i>';
+        else if (idLower.includes("pizz")) iconHtml = '<i class="fa-solid fa-pizza-slice"></i>';
+        else if (idLower.includes("drink") || idLower.includes("bever")) iconHtml = '<i class="fa-solid fa-glass-water"></i>';
+        else if (idLower.includes("dessert") || idLower.includes("sweet")) iconHtml = '<i class="fa-solid fa-ice-cream"></i>';
+        
+        btn.innerHTML = `
+            ${iconHtml}
+            <span>${cat.name[lang] || cat.name.en}</span>
+        `;
+        
+        btn.addEventListener("click", handleCategorySelect);
+        categoryBtnsBar.appendChild(btn);
+    });
+}
+
+function handleCategorySelect(e) {
+    const btn = e.currentTarget;
+    const category = btn.getAttribute("data-category");
+
+    triggerButtonPressEffect(btn);
+    
+    // Update active class styles across all buttons (including the main "All" button)
+    document.querySelectorAll(".category-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    
+    currentCategory = category;
+    updateCategoryTitleText();
+    renderMenuItems();
+
+    // Scroll to grid smoothly
+    const offset = 140;
+    const element = document.querySelector(".menu-main");
+    const elementPosition = element.getBoundingClientRect().top + window.scrollY;
+    const offsetPosition = elementPosition - offset;
+    
+    window.scrollTo({
+         top: offsetPosition,
+         behavior: "smooth"
+    });
+}
+
+// ==========================================================================
+// 9. Menu UI Grid Renderer
+// ==========================================================================
 function renderMenuItems() {
+    if (!menuGrid) return;
     menuGrid.innerHTML = "";
     
-    // Filter Items by category and search query
-    const filteredItems = menuItems.filter(item => {
-        // Category Filter
-        const matchesCategory = currentCategory === "all" || item.category === currentCategory;
+    const lang = currentLanguage;
+    const currencySymbol = restaurantConfig.currency[lang] || restaurantConfig.currency.en || translations[lang].currency;
+    
+    // Filter Items by category and query
+    const filteredItems = menuItemsList.filter(item => {
+        // Category check
+        const matchesCategory = currentCategory === "all" || item.categoryId === currentCategory;
         
-        // Search Filter
+        // Search query check
         const searchLower = searchQuery.toLowerCase().trim();
         if (!searchLower) return matchesCategory;
 
-        const nameEN = item.name.en.toLowerCase();
-        const nameAR = item.name.ar;
-        const descEN = item.description.en.toLowerCase();
-        const descAR = item.description.ar;
+        const nameEN = (item.name.en || "").toLowerCase();
+        const nameAR = item.name.ar || "";
+        const descEN = (item.description.en || "").toLowerCase();
+        const descAR = item.description.ar || "";
         
         const matchesSearch = nameEN.includes(searchLower) || 
                               nameAR.includes(searchLower) ||
@@ -382,7 +632,7 @@ function renderMenuItems() {
         return matchesCategory && matchesSearch;
     });
 
-    // Show/Hide Empty State
+    // Toggle Empty State
     if (filteredItems.length === 0) {
         emptyState.classList.remove("hidden");
         menuGrid.classList.add("hidden");
@@ -396,83 +646,66 @@ function renderMenuItems() {
     // Build Cards
     filteredItems.forEach((item, index) => {
         const card = document.createElement("div");
-        card.className = "menu-card animate-slide-up";
+        
+        // Manage stock status class
+        const isOutOfStock = item.isAvailable === false;
+        card.className = `menu-card animate-slide-up ${isOutOfStock ? 'out-of-stock' : ''}`;
         card.style.animationDelay = `${index * 0.05}s`;
         
-        const lang = currentLanguage;
-        const currencySymbol = translations[lang].currency;
-        
-        // Render custom tags
+        // Tags rendering
         let tagsHtml = "";
         if (item.tags && item.tags[lang]) {
             item.tags[lang].forEach(tag => {
-                tagsHtml += `<span class="tag-badge">${tag}</span>`;
+                if (tag.trim() !== "") {
+                    tagsHtml += `<span class="tag-badge">${tag}</span>`;
+                }
             });
         }
 
+        // Out of stock badge
+        const stockBadge = isOutOfStock ? 
+            `<span class="out-of-stock-badge">${translations[lang].outOfStock}</span>` : "";
+
+        // Add to Cart disables if out of stock
+        const actionDisabled = isOutOfStock ? "disabled" : "";
+
         card.innerHTML = `
             <div class="card-img-container">
-                <img src="${item.image}" alt="${item.name[lang]}" class="menu-card-img skeleton" onload="this.classList.remove('skeleton')">
-                <span class="card-price-badge">${item.price} ${currencySymbol}</span>
+                <img src="${item.imageUrl || item.image || 'assets/logo.svg'}" alt="${item.name[lang]}" class="menu-card-img skeleton" onload="this.classList.remove('skeleton')" onerror="this.onerror=null;this.src='assets/logo.svg'">
+                <span class="card-price-badge">${Number(item.price).toFixed(2)} ${currencySymbol}</span>
+                ${stockBadge}
             </div>
             <div class="card-info">
                 <div class="card-title-row">
-                    <h3 class="card-title">${item.name[lang]}</h3>
+                    <h3 class="card-title">${item.name[lang] || item.name.en}</h3>
                 </div>
-                <p class="card-description">${item.description[lang]}</p>
+                <p class="card-description">${item.description[lang] || item.description.en || ""}</p>
+                <div class="card-tags-row">${tagsHtml}</div>
                 <div class="card-actions">
-                    <button class="btn-card-order btn-primary-gold" onclick="addToCart('${item.id}')">
-                        <i class="fa-solid fa-cart-plus"></i>
-                        <span>${translations[lang].addToOrder}</span>
-                    </button>
-                    <button class="btn-card-order btn-secondary-whatsapp" onclick="directWhatsAppOrder('${item.id}')">
-                        <i class="fa-brands fa-whatsapp"></i>
-                        <span>${translations[lang].orderNow}</span>
-                    </button>
-                </div>
+                    <button class="btn-card-order btn-primary-gold" onclick="addToCart('${item.id}', this)" ${actionDisabled}>
+                    <i class="fa-solid fa-cart-plus"></i>
+                    <span>${translations[lang].addToOrder}</span>
+                </button>
+                <button class="btn-card-order btn-secondary-whatsapp" onclick="directWhatsAppOrder('${item.id}', this)" ${actionDisabled}>
+                    <i class="fa-brands fa-whatsapp"></i>
+                    <span>${translations[lang].orderNow}</span>
+                </button>
             </div>
         `;
         menuGrid.appendChild(card);
     });
 }
 
-// 6. Category Selection Manager
-function handleCategorySelect(e) {
-    const btn = e.currentTarget;
-    const category = btn.getAttribute("data-category");
-    
-    // Update active class
-    categoryBtns.forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    
-    // Set category state and reload
-    currentCategory = category;
-    updateCategoryTitleText();
-    renderMenuItems();
-
-    // Scroll to menu section header smoothly
-    const offset = 140;
-    const element = document.querySelector(".menu-main");
-    const elementPosition = element.getBoundingClientRect().top + window.scrollY;
-    const offsetPosition = elementPosition - offset;
-    
-    window.scrollTo({
-         top: offsetPosition,
-         behavior: "smooth"
-    });
-}
-
-// 7. Search Matching Manager
+// ==========================================================================
+// 10. Search Input Management
+// ==========================================================================
 function handleSearch(e) {
     searchQuery = e.target.value;
-    
-    // Toggle Search Clear Button visibility
     if (searchQuery.length > 0) {
         searchClear.classList.add("show");
     } else {
         searchClear.classList.remove("show");
     }
-    
     renderMenuItems();
 }
 
@@ -484,12 +717,16 @@ function clearSearch() {
     searchInput.focus();
 }
 
-// 8. Shopping Cart Manager & WhatsApp Compiler
-window.addToCart = function(itemId) {
-    const item = menuItems.find(i => i.id === itemId);
-    if (!item) return;
+// ==========================================================================
+// 11. Shopping Cart Drawer Manager
+// ==========================================================================
+window.addToCart = function(itemId, buttonEl) {
+    const item = menuItemsList.find(i => i.id === itemId);
+    if (!item || item.isAvailable === false) return;
+
+    triggerButtonPressEffect(buttonEl);
     
-    // Check if item is already in cart
+    // Check item existence
     const cartItem = cart.find(i => i.id === itemId);
     if (cartItem) {
         cartItem.quantity += 1;
@@ -500,15 +737,14 @@ window.addToCart = function(itemId) {
         });
     }
     
-    // Save Cart, render cart, update badges
     saveCartToStorage();
     renderCart();
     
-    // Animate cart badges
+    // Bounce badges
     animateBadge(cartCountBadge);
     animateBadge(floatingCartBadge);
 
-    // Show temporary toast notification for item added
+    // Toast
     showToast(translations[currentLanguage].itemAdded);
 };
 
@@ -519,13 +755,20 @@ function animateBadge(badge) {
     }, 200);
 }
 
-// Show standard elegant toast alert
+function triggerButtonPressEffect(button) {
+    if (!button) return;
+    button.classList.remove("button-press");
+    void button.offsetWidth;
+    button.classList.add("button-press");
+    setTimeout(() => button.classList.remove("button-press"), 200);
+}
+
+// Toast
 function showToast(message) {
     const toast = document.createElement("div");
     toast.className = "toast-message";
     toast.textContent = message;
     
-    // CSS for dynamic Toast insertion
     Object.assign(toast.style, {
         position: "fixed",
         bottom: "100px",
@@ -546,13 +789,11 @@ function showToast(message) {
     
     document.body.appendChild(toast);
     
-    // Trigger transition
     setTimeout(() => {
         toast.style.opacity = "1";
         toast.style.transform = "translateX(-50%) translateY(0)";
     }, 50);
     
-    // Fade out and remove
     setTimeout(() => {
         toast.style.opacity = "0";
         toast.style.transform = "translateX(-50%) translateY(-20px)";
@@ -568,7 +809,6 @@ window.changeQuantity = function(itemId, amount) {
     
     cartItem.quantity += amount;
     
-    // If quantity is zero or less, remove item
     if (cartItem.quantity <= 0) {
         removeFromCart(itemId);
     } else {
@@ -585,7 +825,7 @@ window.removeFromCart = function(itemId) {
 
 function renderCart() {
     const lang = currentLanguage;
-    const currencySymbol = translations[lang].currency;
+    const currencySymbol = restaurantConfig.currency[lang] || restaurantConfig.currency.en || translations[lang].currency;
     
     if (cart.length === 0) {
         cartItemsContainer.classList.add("hidden");
@@ -603,7 +843,7 @@ function renderCart() {
         let totalItemsCount = 0;
         
         cart.forEach(cartItem => {
-            const item = menuItems.find(i => i.id === cartItem.id);
+            const item = menuItemsList.find(i => i.id === cartItem.id);
             if (!item) return;
             
             const itemTotal = item.price * cartItem.quantity;
@@ -614,11 +854,11 @@ function renderCart() {
             cartItemEl.className = "cart-item";
             
             cartItemEl.innerHTML = `
-                <img src="${item.image}" alt="${item.name[lang]}" class="cart-item-img">
+                <img src="${item.imageUrl || item.image || 'assets/logo.svg'}" alt="${item.name[lang] || item.name.en}" class="cart-item-img" onerror="this.onerror=null;this.src='assets/logo.svg'">
                 <div class="cart-item-info">
                     <div>
-                        <h4 class="cart-item-title">${item.name[lang]}</h4>
-                        <span class="cart-item-price">${item.price} ${currencySymbol}</span>
+                        <h4 class="cart-item-title">${item.name[lang] || item.name.en}</h4>
+                        <span class="cart-item-price">${Number(item.price).toFixed(2)} ${currencySymbol}</span>
                     </div>
                     <div class="cart-item-controls">
                         <div class="quantity-controller">
@@ -646,13 +886,13 @@ function renderCart() {
     }
 }
 
-// LocalStorage helpers
+// Storage helpers
 function saveCartToStorage() {
-    localStorage.setItem("tasteMenuCart", JSON.stringify(cart));
+    localStorage.setItem(`tasteMenuCart_${activeRestaurantId}`, JSON.stringify(cart));
 }
 
 function loadCartFromStorage() {
-    const savedCart = localStorage.getItem("tasteMenuCart");
+    const savedCart = localStorage.getItem(`tasteMenuCart_${activeRestaurantId}`);
     if (savedCart) {
         try {
             cart = JSON.parse(savedCart);
@@ -663,44 +903,57 @@ function loadCartFromStorage() {
     }
 }
 
-// 9. Quick Send Single-Item Order
-window.directWhatsAppOrder = function(itemId) {
-    const item = menuItems.find(i => i.id === itemId);
+// ==========================================================================
+// 12. Quick Direct Single-Item Order
+// ==========================================================================
+window.directWhatsAppOrder = function(itemId, buttonEl) {
+    const item = menuItemsList.find(i => i.id === itemId);
     if (!item) return;
+
+    triggerButtonPressEffect(buttonEl);
     
     const lang = currentLanguage;
-    const phone = translations[lang].whatsappNumber;
+    const phone = restaurantConfig.whatsappNumber || translations[lang].whatsappNumber;
+    const currencySymbol = restaurantConfig.currency[lang] || restaurantConfig.currency.en || translations[lang].currency;
     
+    // Log item ordered click
+    triggerItemOrderClickTracker(itemId);
+    triggerWhatsAppClicksTracker();
+
     let text = translations[lang].singleOrderText
-        .replace("{item}", item.name[lang])
-        .replace("{price}", item.price);
+        .replace("{item}", item.name[lang] || item.name.en)
+        .replace("{price}", Number(item.price).toFixed(2))
+        .replace("{currency}", currencySymbol);
         
-    const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+    const waUrl = `https://wa.me/${phone.replace(/\+/g, '')}?text=${encodeURIComponent(text)}`;
     window.open(waUrl, "_blank");
 };
 
-// Checkout multi-item cart to WhatsApp
+// Checkout entire cart
 function checkoutCartToWhatsApp() {
     if (cart.length === 0) return;
     
     const lang = currentLanguage;
-    const phone = translations[lang].whatsappNumber;
-    const currencySymbol = translations[lang].currency;
+    const phone = restaurantConfig.whatsappNumber || translations[lang].whatsappNumber;
+    const currencySymbol = restaurantConfig.currency[lang] || restaurantConfig.currency.en || translations[lang].currency;
     
+    triggerWhatsAppClicksTracker();
+
     let text = "";
     
     if (lang === "en") {
-        text += "👑 *Taste Restaurant - Digital Order*\n";
+        text += `👑 *${restaurantConfig.name.en} - Digital Order*\n`;
         text += "--------------------------------------\n";
-        text += "Hello Taste Restaurant, I would like to place the following order:\n\n";
+        text += "Hello, I would like to place the following order:\n\n";
         
         let total = 0;
         cart.forEach(cartItem => {
-            const item = menuItems.find(i => i.id === cartItem.id);
+            const item = menuItemsList.find(i => i.id === cartItem.id);
             if (item) {
                 const subtotal = item.price * cartItem.quantity;
                 total += subtotal;
-                text += `▪️ *${cartItem.quantity} x ${item.name.en}* - (${item.price} ${currencySymbol})\n`;
+                triggerItemOrderClickTracker(item.id); // log click for each item in checkout
+                text += `▪️ *${cartItem.quantity} x ${item.name.en}* - (${Number(item.price).toFixed(2)} ${currencySymbol})\n`;
             }
         });
         
@@ -709,17 +962,18 @@ function checkoutCartToWhatsApp() {
         text += "📍 *Type:* Delivery / Pickup (Please confirm)\n";
         text += "Please confirm and estimate preparation time. Thanks!";
     } else {
-        text += "👑 *مطعم تيست - طلب جديد*\n";
+        text += `👑 *${restaurantConfig.name.ar || restaurantConfig.name.en} - طلب جديد*\n`;
         text += "--------------------------------------\n";
-        text += "مرحباً مطعم تيست، أود تسجيل طلب المأكولات التالي:\n\n";
+        text += "مرحباً، أود تسجيل طلب المأكولات التالي:\n\n";
         
         let total = 0;
         cart.forEach(cartItem => {
-            const item = menuItems.find(i => i.id === cartItem.id);
+            const item = menuItemsList.find(i => i.id === cartItem.id);
             if (item) {
                 const subtotal = item.price * cartItem.quantity;
                 total += subtotal;
-                text += `▪️ *${cartItem.quantity} x ${item.name.ar}* - (${item.price} ${currencySymbol})\n`;
+                triggerItemOrderClickTracker(item.id);
+                text += `▪️ *${cartItem.quantity} x ${item.name.ar || item.name.en}* - (${Number(item.price).toFixed(2)} ${currencySymbol})\n`;
             }
         });
         
@@ -729,54 +983,69 @@ function checkoutCartToWhatsApp() {
         text += "يرجى تأكيد الطلب وتحديد الوقت المقدر للتحضير. شكراً لكم!";
     }
     
-    const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+    const waUrl = `https://wa.me/${phone.replace(/\+/g, '')}?text=${encodeURIComponent(text)}`;
     window.open(waUrl, "_blank");
 }
 
-// 10. Core Setup Event Listeners
+// ==========================================================================
+// 13. Event Listeners Setup
+// ==========================================================================
 function setupEventListeners() {
-    // Language Toggle
-    langToggle.addEventListener("click", toggleLanguage);
-
-    // Category Buttons
-    categoryBtns.forEach(btn => {
-        btn.addEventListener("click", handleCategorySelect);
+    langToggle.addEventListener("click", (event) => {
+        triggerButtonPressEffect(event.currentTarget);
+        toggleLanguage();
     });
 
-    // Search input
-    searchInput.addEventListener("input", handleSearch);
-    searchClear.addEventListener("click", clearSearch);
+    // Setup main category "All" button
+    const catAllBtn = document.querySelector(".category-btn[data-category='all']");
+    if (catAllBtn) {
+        catAllBtn.addEventListener("click", handleCategorySelect);
+    }
 
-    // Cart Drawer Toggle Actions
+    searchInput.addEventListener("input", handleSearch);
+    searchClear.addEventListener("click", (event) => {
+        triggerButtonPressEffect(event.currentTarget);
+        clearSearch();
+    });
+
+    // Cart Sidebar sliders
     const openCartDrawer = () => {
         cartDrawer.classList.add("active");
-        document.body.style.overflow = "hidden"; // Prevent background scroll
+        document.body.style.overflow = "hidden";
     };
     
     const closeCartDrawer = () => {
         cartDrawer.classList.remove("active");
-        document.body.style.overflow = ""; // Enable background scroll
+        document.body.style.overflow = "";
     };
 
-    cartToggle.addEventListener("click", openCartDrawer);
-    cartClose.addEventListener("click", closeCartDrawer);
+    cartToggle.addEventListener("click", (event) => {
+        triggerButtonPressEffect(event.currentTarget);
+        openCartDrawer();
+    });
+    cartClose.addEventListener("click", (event) => {
+        triggerButtonPressEffect(event.currentTarget);
+        closeCartDrawer();
+    });
     document.querySelector(".cart-overlay").addEventListener("click", closeCartDrawer);
 
-    // Floating Button Checkout
-    floatingWhatsappBtn.addEventListener("click", () => {
+    // Floating Button action
+    floatingWhatsappBtn.addEventListener("click", (event) => {
+        triggerButtonPressEffect(event.currentTarget);
         if (cart.length > 0) {
             openCartDrawer();
         } else {
-            // If cart is empty, floating whatsapp button acts as direct line contact
             const lang = currentLanguage;
-            const phone = translations[lang].whatsappNumber;
+            const phone = restaurantConfig.whatsappNumber || translations[lang].whatsappNumber;
             const greetText = lang === "en" ? 
-                "Hello Taste Restaurant! I am browsing your digital menu. Can you help me?" : 
-                "مرحباً مطعم تيست! أتصفح قائمتكم الرقمية حالياً، هل يمكنك مساعدتي؟";
-            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(greetText)}`, "_blank");
+                `Hello! I am browsing your digital menu. Can you help me?` : 
+                `مرحباً! أتصفح قائمتكم الرقمية حالياً، هل يمكنك مساعدتي؟`;
+            window.open(`https://wa.me/${phone.replace(/\+/g, '')}?text=${encodeURIComponent(greetText)}`, "_blank");
         }
     });
 
-    // Final Checkout Cart Trigger
-    whatsappCheckoutBtn.addEventListener("click", checkoutCartToWhatsApp);
+    whatsappCheckoutBtn.addEventListener("click", (event) => {
+        triggerButtonPressEffect(event.currentTarget);
+        checkoutCartToWhatsApp();
+    });
 }
