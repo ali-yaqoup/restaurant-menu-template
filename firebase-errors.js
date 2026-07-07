@@ -22,9 +22,22 @@ export function getAuthErrorMessage(error) {
 }
 
 export function getFirestoreErrorMessage(error) {
-    if (!error) return "A database error occurred.";
+    if (!error) return "حدث خطأ في قاعدة البيانات.";
     if (error.code === "permission-denied") {
-        return "Permission denied. Ensure your users/{uid} document has the correct role and restaurantId.";
+        return (
+            "صلاحيات Firestore غير كافية. تأكد من:\n" +
+            "1) نشر قواعد firestore.rules من Firebase Console\n" +
+            "2) إنشاء مستند users/{uid} يحتوي role و restaurantId\n" +
+            "3) أن restaurantId يطابق مطعمك (مثال: taste)"
+        );
     }
-    return error.message || "Failed to sync with the database.";
+    return error.message || "فشل الاتصال بقاعدة البيانات.";
+}
+
+export function formatAppError(error) {
+    if (!error) return "حدث خطأ غير معروف.";
+    if (error.code === "permission-denied") {
+        return getFirestoreErrorMessage(error);
+    }
+    return error.message || getFirestoreErrorMessage(error);
 }

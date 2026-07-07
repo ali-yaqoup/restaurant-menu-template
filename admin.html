@@ -12,9 +12,8 @@
 
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
 
-    <!-- Cropper.js for image editing -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     
     <!-- Admin Dashboard Styles -->
     <link rel="stylesheet" href="admin.css">
@@ -388,17 +387,29 @@
                                 <div class="card-header"><h3>Branding & Theme Styling</h3></div>
                                 <div class="card-body">
                                     <div class="form-group">
-                                        <label>Restaurant Logo</label>
+                                        <label for="settings-logo-url">Restaurant Logo URL</label>
                                         <div class="logo-upload-wrapper">
-                                            <img id="settings-logo-preview" src="assets/logo.svg" alt="Logo Preview" class="logo-preview-box" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=150&q=80'">
+                                            <img id="settings-logo-preview" src="" alt="Logo Preview" class="logo-preview-box" hidden>
                                             <div class="logo-upload-actions">
-                                                <input type="file" id="settings-logo-input" class="hidden-input" accept="image/*" aria-label="Upload logo" title="Upload logo">
-                                                <button type="button" class="btn-admin-secondary" onclick="document.getElementById('settings-logo-input').click()">
-                                                    <i class="fa-solid fa-camera"></i>
-                                                    <span>Upload Logo</span>
-                                                </button>
-                                                <span class="file-info">Maximum file size: 2MB.</span>
+                                                <input type="text" id="settings-logo-url" class="admin-input" placeholder="Paste logo image URL here">
+                                                <span class="file-info">Enter a direct link to your logo image.</span>
                                             </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="logoFile">Upload Logo (Crop + Cloudinary)</label>
+                                        <div class="logo-upload-actions">
+                                            <input type="file" id="logoFile" class="admin-input" accept="image/*">
+                                            <span class="file-info">Pick an image, crop it, then upload to Cloudinary.</span>
+                                        </div>
+                                        <div id="logoUploadStatus" class="form-tip" role="status" aria-live="polite"></div>
+                                        <img id="logoPreview" alt="Selected Logo Preview" class="logo-preview-box logo-live-preview" hidden>
+                                        <div id="cropContainer" class="logo-crop-container" style="display:none;">
+                                            <img id="cropImage" alt="Crop Logo Target">
+                                            <button type="button" id="cropConfirm" class="btn-admin-primary">
+                                                <i class="fa-solid fa-crop"></i>
+                                                <span>Confirm Crop</span>
+                                            </button>
                                         </div>
                                     </div>
 
@@ -563,18 +574,14 @@
                         </div>
                     </div>
 
-                    <!-- Image Upload -->
+                    <!-- Image URL -->
                     <div class="form-group">
-                        <label>Dish Image</label>
+                        <label for="imageUrl">Dish Image URL</label>
                         <div class="dish-image-picker">
-                            <img id="item-img-preview" src="assets/logo.svg" alt="Item Image" class="item-img-preview-box" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=150&q=80'">
+                            <img id="item-img-preview" src="" alt="Item Image" class="item-img-preview-box" hidden>
                             <div class="image-picker-actions">
-                                <input type="file" id="item-image-input" class="hidden-input" accept="image/*" aria-label="Upload item image" title="Upload item image">
-                                <button type="button" class="btn-admin-secondary" onclick="document.getElementById('item-image-input').click()">
-                                    <i class="fa-solid fa-image"></i>
-                                    <span>Upload & Crop Image</span>
-                                </button>
-                                <span class="file-info">Optimized automatically before uploading.</span>
+                                <input type="text" id="imageUrl" class="admin-input" placeholder="Paste image URL here">
+                                <span class="file-info">Enter a direct link to the dish image.</span>
                             </div>
                         </div>
                     </div>
@@ -629,28 +636,6 @@
         </div>
     </div>
 
-    <!-- C. Image Cropping Modal -->
-    <div id="modal-cropper" class="modal-overlay modal-cropper-overlay">
-        <div class="modal-card modal-cropper-card">
-            <div class="modal-header">
-                <h3>Crop Image</h3>
-                <button type="button" class="modal-close-btn" title="Close dialog" aria-label="Close dialog" onclick="closeCropperModal()"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="modal-body cropper-body">
-                <div class="cropper-container">
-                    <img id="cropper-target-img" src="" alt="Target Image">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-admin-secondary" onclick="closeCropperModal()">Cancel</button>
-                <button type="button" id="btn-crop-save" class="btn-admin-primary">
-                    <i class="fa-solid fa-crop"></i>
-                    <span>Apply Crop & Optimize</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
     <!-- D. Custom Styled Confirmation Modal -->
     <div id="modal-confirm" class="modal-overlay modal-confirm-overlay">
         <div class="modal-card modal-confirm-card">
@@ -667,7 +652,12 @@
     </div>
 
     <!-- Main Controller Logic -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-    <script type="module" src="admin.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+    <script>
+      // TODO: replace with your real Cloudinary cloud name
+      window.CLOUDINARY_CLOUD_NAME = "t94xf7rb";
+      window.CLOUDINARY_UPLOAD_PRESET = "menu_test";
+    </script>
+    <script type="module" src="admin.js?v=5"></script>
 </body>
 </html>

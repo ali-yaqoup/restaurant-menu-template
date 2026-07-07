@@ -1,15 +1,10 @@
 /**
- * Firebase initialization — modular SDK v10 (CDN)
- * Single source of truth for all Firebase services in this project.
+ * Firebase initialization - modular SDK v10 (CDN)
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { getStorage } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
-
-/** Pin SDK version for any file that imports Firestore/Auth modules directly */
-export const FIREBASE_SDK_VERSION = "10.8.0";
 
 const firebaseConfig = {
     apiKey: "AIzaSyB9L1qQkIGwbAbiT8wOcjtIG6y1TezidOo",
@@ -24,20 +19,15 @@ const firebaseConfig = {
 let app = null;
 let auth = null;
 let db = null;
-let storage = null;
-let initError = null;
+let isFirebaseReady = false;
 
 try {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
     db = getFirestore(app);
-    storage = getStorage(app);
+    isFirebaseReady = Boolean(app && auth && db);
 } catch (error) {
-    initError = error;
     console.error("Firebase initialization failed:", error);
 }
 
-/** True when all core services initialized without error */
-export const isFirebaseReady = Boolean(app && auth && db && storage && !initError);
-
-export { app, auth, db, storage, initError, firebaseConfig };
+export { app, auth, db, isFirebaseReady };

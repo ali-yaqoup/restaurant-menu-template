@@ -3,7 +3,7 @@
  * Real-time sync with Firestore for menu data and analytics.
  */
 
-import { db, initError, isFirebaseReady } from "./firebase-config.js";
+import { db, isFirebaseReady } from "./firebase-config.js?v=3";
 import { 
     doc, 
     collection, 
@@ -41,7 +41,7 @@ const fallbackItems = [
         id: "truffle-burger",
         categoryId: "burgers",
         price: 8.0,
-        image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80",
+        imageUrl: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80",
         name: { en: "Truffle Burger", ar: "برغر الترفل" },
         description: { en: "Juicy Angus beef, premium black truffle aioli, melted Swiss cheese, and caramelized onions on a toasted brioche bun.", ar: "لحم أنجوس مشوي، صلصة الترافل الأسود الفاخرة، جبن سويسري ذائب، وبصل مكرمل في خبز البريوش الطازج." },
         tags: { en: ["Premium", "Chef Special"], ar: ["فاخر", "مميز"] },
@@ -51,7 +51,7 @@ const fallbackItems = [
         id: "cheese-burger",
         categoryId: "burgers",
         price: 7.0,
-        image: "https://images.unsplash.com/photo-1550547660-9454987c1f0f?auto=format&fit=crop&w=600&q=80",
+        imageUrl: "https://images.unsplash.com/photo-1550547660-9454987c1f0f?auto=format&fit=crop&w=600&q=80",
         name: { en: "Cheese Burger", ar: "برغر الجبن" },
         description: { en: "Premium beef patty, melting cheddar cheese, fresh crisp lettuce, vine-ripened tomatoes, and our signature special sauce.", ar: "شريحة لحم بقري فاخر، جبنة شيدر ذائبة، خس طازج، طماطم، وصلصة تيست الخاصة." },
         tags: { en: ["Classic"], ar: ["كلاسيكي"] },
@@ -61,7 +61,7 @@ const fallbackItems = [
         id: "margherita-pizza",
         categoryId: "pizza",
         price: 9.0,
-        image: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=600&q=80",
+        imageUrl: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=600&q=80",
         name: { en: "Margherita Pizza", ar: "بيتزا مارغريتا" },
         description: { en: "Artisan pizza crust topped with rich tomato sauce, fresh buffalo mozzarella, aromatic fresh basil leaves, and a drizzle of extra virgin olive oil.", ar: "عجينة البيتزا الحرفية تعلوها صلصة الطماطم الغنية، جبنة الموزاريلا الطازجة، أوراق الريحان العطرية ورشة من زيت الزيتون البكر." },
         tags: { en: ["Vegetarian", "Artisan"], ar: ["نباتي", "حرفية"] },
@@ -71,7 +71,7 @@ const fallbackItems = [
         id: "pepperoni-pizza",
         categoryId: "pizza",
         price: 10.0,
-        image: "https://images.unsplash.com/photo-1628840042765-356cda07504e?auto=format&fit=crop&w=600&q=80",
+        imageUrl: "https://images.unsplash.com/photo-1628840042765-356cda07504e?auto=format&fit=crop&w=600&q=80",
         name: { en: "Pepperoni Pizza", ar: "بيتزا بيبروني" },
         description: { en: "Classic Italian crust loaded with premium spicy beef pepperoni, mozzarella cheese, fresh oregano, and an optional touch of hot honey.", ar: "عجينة إيطالية كلاسيكية مغطاة بقطع البيبروني البقري الحار، جبنة الموزاريلا، الأوريغانو الطازج مع لمسة عسل حار اختيارية." },
         tags: { en: ["Spicy"], ar: ["حار"] },
@@ -81,7 +81,7 @@ const fallbackItems = [
         id: "golden-mojito",
         categoryId: "drinks",
         price: 3.0,
-        image: "https://images.unsplash.com/photo-1551538827-9b03706baf00?auto=format&fit=crop&w=600&q=80",
+        imageUrl: "https://images.unsplash.com/photo-1551538827-9b03706baf00?auto=format&fit=crop&w=600&q=80",
         name: { en: "Golden Mojito", ar: "موهيتو ذهبي" },
         description: { en: "A refreshing blend of fresh lime, wild mint, sparkling club soda, and edible 24K gold flakes for a touch of luxury.", ar: "مزيج منعش من الليمون الأخضر، النعناع البري، صودا فوارة ورقاقات الذهب عيار 24 القابلة للأكل لمسة من الفخامة." },
         tags: { en: ["Signature", "Cold"], ar: ["توقيعنا", "بارد"] },
@@ -91,7 +91,7 @@ const fallbackItems = [
         id: "orange-juice",
         categoryId: "drinks",
         price: 2.5,
-        image: "https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?auto=format&fit=crop&w=600&q=80",
+        imageUrl: "https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?auto=format&fit=crop&w=600&q=80",
         name: { en: "Fresh Orange Juice", ar: "عصير برتقال طازج" },
         description: { en: "100% freshly squeezed sweet oranges, served chilled on ice. Packed with Vitamin C and natural energy.", ar: "عصير برتقال طبيعي 100% معصور طازجاً، يقدم مبرداً مع الثلج. غني بفيتامين سي والطاقة الطبيعية." },
         tags: { en: ["Fresh"], ar: ["طازج"] },
@@ -101,7 +101,7 @@ const fallbackItems = [
         id: "kunafa-cheesecake",
         categoryId: "desserts",
         price: 5.0,
-        image: "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=600&q=80",
+        imageUrl: "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=600&q=80",
         name: { en: "Pistachio Kunafa Cheesecake", ar: "تشيز كيك الكنافة بالفستق" },
         description: { en: "An exquisite fusion of creamy New York cheesecake layered with crispy, golden Arabic kunafa, topped with rich pistachio sauce.", ar: "اندماج فاخر بين التشيز كيك الكريمي الغني وعجينة الكنافة الذهبية المقرمشة، مغطاة بصلصة الفستق الحلبي الفاخرة." },
         tags: { en: ["Best Seller", "Fusion"], ar: ["الأكثر مبيعاً", "مبتكر"] },
@@ -111,7 +111,7 @@ const fallbackItems = [
         id: "lava-cake",
         categoryId: "desserts",
         price: 4.0,
-        image: "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=600&q=80",
+        imageUrl: "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=600&q=80",
         name: { en: "Chocolate Lava Cake", ar: "كيك الشوكولاتة البركانية" },
         description: { en: "Warm chocolate cake with a molten, liquid chocolate center, lightly dusted with cocoa and served with premium vanilla ice cream.", ar: "كيك الشوكولاتة الدافئ مع قلب من الشوكولاتة السائلة الذائبة، مرشوش بالكاكاو ويقدم مع آيس كريم الفانيليا الفاخر." },
         tags: { en: ["Warm"], ar: ["دافئ"] },
@@ -210,6 +210,8 @@ const categoryBtnsBar = document.getElementById("dynamic-categories-bar");
 const currentCategoryTitle = document.getElementById("current-category-title");
 const itemsCountDisplay = document.getElementById("items-count");
 const langToggle = document.getElementById("lang-toggle");
+const themeToggle = document.getElementById("theme-toggle");
+const THEME_STORAGE_KEY = "theme";
 
 // Cart DOM Elements
 const cartToggle = document.getElementById("cart-toggle");
@@ -245,9 +247,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     loadCartFromStorage();
+    initTheme();
 
     if (!isFirebaseReady || !db) {
-        console.error("Firestore unavailable:", initError);
+        console.error("Firestore unavailable. Check firebase-config.js.");
         applyRestaurantConfig(fallbackRestaurant);
         applyCategories(fallbackCategories);
         applyMenuItems(fallbackItems);
@@ -404,26 +407,54 @@ function triggerItemOrderClickTracker(itemId) {
 function applyRestaurantConfig(data) {
     restaurantConfig = data;
 
-    // Apply Dynamic Theme Colors
-    const colors = data.colors || {};
+    // Apply dynamic brand colors (respects light/dark mode)
+    applyDynamicThemeColors();
+
+    // Refresh translation templates
+    applyLanguage(currentLanguage);
+}
+
+function applyDynamicThemeColors() {
+    const colors = restaurantConfig.colors || {};
     const dynamicStyle = document.getElementById("dynamic-theme-colors");
-    if (dynamicStyle && colors.bg && colors.gold) {
-        // Generate responsive, custom variables mapping
+    if (!dynamicStyle) return;
+
+    const isLight = document.body.classList.contains("light");
+
+    if (isLight) {
+        if (!colors.gold) {
+            dynamicStyle.innerHTML = "";
+            return;
+        }
         dynamicStyle.innerHTML = `
-            :root {
+            html.light, body.light {
+                --primary: ${colors.gold};
+                --gold: ${colors.gold};
+                --gold-dark: ${colors.goldDark || '#7a5610'};
+                --gold-light: ${colors.goldLight || 'rgba(156, 111, 19, 0.12)'};
+            }
+        `;
+        return;
+    }
+
+    if (colors.bg && colors.gold) {
+        dynamicStyle.innerHTML = `
+            html.dark, body.dark {
+                --background: ${colors.bg};
+                --surface: ${colors.surface || '#1a1a1a'};
+                --primary: ${colors.gold};
                 --bg-color: ${colors.bg};
-                --surface-color: ${colors.surface || '#121212'};
-                --surface-card: ${colors.surfaceCard || '#151515'};
+                --surface-color: ${colors.surface || '#1a1a1a'};
+                --surface-card: ${colors.surfaceCard || colors.surface || '#1a1a1a'};
                 --gold: ${colors.gold};
                 --gold-dark: ${colors.goldDark || '#aa8c2c'};
                 --gold-light: ${colors.goldLight || 'rgba(212, 175, 55, 0.15)'};
                 --gold-hover: ${colors.goldHover || '#F5D36C'};
             }
         `;
+    } else {
+        dynamicStyle.innerHTML = "";
     }
-
-    // Refresh translation templates
-    applyLanguage(currentLanguage);
 }
 
 function applyCategories(cats) {
@@ -438,7 +469,37 @@ function applyMenuItems(items) {
 }
 
 // ==========================================================================
-// 7. Dynamic Translation Manager
+// 7. Theme Manager
+// ==========================================================================
+function initTheme() {
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || "dark";
+    applyTheme(savedTheme);
+}
+
+function applyTheme(theme) {
+    const resolvedTheme = theme === "light" ? "light" : "dark";
+    document.documentElement.classList.remove("dark", "light");
+    document.body.classList.remove("dark", "light");
+    document.documentElement.classList.add(resolvedTheme);
+    document.body.classList.add(resolvedTheme);
+    localStorage.setItem(THEME_STORAGE_KEY, resolvedTheme);
+    applyDynamicThemeColors();
+    updateThemeToggleIcon(resolvedTheme);
+}
+
+function toggleTheme() {
+    const isLight = document.body.classList.contains("light");
+    applyTheme(isLight ? "dark" : "light");
+}
+
+function updateThemeToggleIcon(theme) {
+    const icon = document.querySelector("#theme-toggle .theme-icon");
+    if (!icon) return;
+    icon.textContent = theme === "light" ? "🌙" : "☀️";
+}
+
+// ==========================================================================
+// 8. Dynamic Translation Manager
 // ==========================================================================
 function applyLanguage(lang) {
     currentLanguage = lang;
@@ -671,7 +732,7 @@ function renderMenuItems() {
 
         card.innerHTML = `
             <div class="card-img-container">
-                <img src="${item.imageUrl || item.image || 'assets/logo.svg'}" alt="${item.name[lang]}" class="menu-card-img skeleton" onload="this.classList.remove('skeleton')" onerror="this.onerror=null;this.src='assets/logo.svg'">
+                <img src="${item.imageUrl || ''}" alt="${item.name[lang]}" class="menu-card-img skeleton" onload="this.classList.remove('skeleton')">
                 <span class="card-price-badge">${Number(item.price).toFixed(2)} ${currencySymbol}</span>
                 ${stockBadge}
             </div>
@@ -682,14 +743,15 @@ function renderMenuItems() {
                 <p class="card-description">${item.description[lang] || item.description.en || ""}</p>
                 <div class="card-tags-row">${tagsHtml}</div>
                 <div class="card-actions">
-                    <button class="btn-card-order btn-primary-gold" onclick="addToCart('${item.id}', this)" ${actionDisabled}>
-                    <i class="fa-solid fa-cart-plus"></i>
-                    <span>${translations[lang].addToOrder}</span>
-                </button>
-                <button class="btn-card-order btn-secondary-whatsapp" onclick="directWhatsAppOrder('${item.id}', this)" ${actionDisabled}>
-                    <i class="fa-brands fa-whatsapp"></i>
-                    <span>${translations[lang].orderNow}</span>
-                </button>
+                    <button type="button" class="btn btn-primary" onclick="directWhatsAppOrder('${item.id}', this)" ${actionDisabled}>
+                        <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+                        <span>${translations[lang].orderNow}</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="addToCart('${item.id}', this)" ${actionDisabled}>
+                        <i class="fa-solid fa-cart-plus" aria-hidden="true"></i>
+                        <span>${translations[lang].addToOrder}</span>
+                    </button>
+                </div>
             </div>
         `;
         menuGrid.appendChild(card);
@@ -854,7 +916,7 @@ function renderCart() {
             cartItemEl.className = "cart-item";
             
             cartItemEl.innerHTML = `
-                <img src="${item.imageUrl || item.image || 'assets/logo.svg'}" alt="${item.name[lang] || item.name.en}" class="cart-item-img" onerror="this.onerror=null;this.src='assets/logo.svg'">
+                <img src="${item.imageUrl || ''}" alt="${item.name[lang] || item.name.en}" class="cart-item-img">
                 <div class="cart-item-info">
                     <div>
                         <h4 class="cart-item-title">${item.name[lang] || item.name.en}</h4>
@@ -991,6 +1053,11 @@ function checkoutCartToWhatsApp() {
 // 13. Event Listeners Setup
 // ==========================================================================
 function setupEventListeners() {
+    themeToggle?.addEventListener("click", (event) => {
+        triggerButtonPressEffect(event.currentTarget);
+        toggleTheme();
+    });
+
     langToggle.addEventListener("click", (event) => {
         triggerButtonPressEffect(event.currentTarget);
         toggleLanguage();

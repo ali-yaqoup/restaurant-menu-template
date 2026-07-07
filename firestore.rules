@@ -1,0 +1,79 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function userExists() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function getUserRole() {
+      return userDoc().data.role;
+    }
+
+    function isSuperAdmin() {
+      return userExists() && getUserRole() == 'super_admin';
+    }
+
+    function isRestaurantStaff(restaurantId) {
+      return userExists() &&
+        (userDoc().data.restaurantId == restaurantId || isSuperAdmin());
+    }
+
+    function isRestaurantAdmin(restaurantId) {
+      return isRestaurantStaff(restaurantId) &&
+        getUserRole() in ['admin', 'restaurant_admin', 'super_admin'];
+    }
+
+    function isRestaurantAnalyticsUpdate() {
+      return request.auth == null &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['analytics']) &&
+        request.resource.data.analytics is map;
+    }
+
+    function isMenuItemAnalyticsUpdate() {
+      return request.auth == null &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['orderClicks', 'views']);
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isSuperAdmin();
+      allow write: if isSuperAdmin();
+    }
+
+    match /restaurants/{restaurantId} {
+      allow read: if true;
+      allow create, delete: if isRestaurantAdmin(restaurantId);
+      allow update: if isRestaurantAdmin(restaurantId) || isRestaurantAnalyticsUpdate();
+
+      match /categories/{categoryId} {
+        allow read: if true;
+        allow create, update: if isRestaurantStaff(restaurantId);
+        allow delete: if isRestaurantAdmin(restaurantId);
+      }
+
+      match /menu_items/{itemId} {
+        allow read: if true;
+        allow create, update: if isRestaurantStaff(restaurantId) || isMenuItemAnalyticsUpdate();
+        allow delete: if isRestaurantAdmin(restaurantId);
+      }
+
+      match /backups/{backupId} {
+        allow read, write: if isRestaurantAdmin(restaurantId);
+      }
+    }
+  }
+}

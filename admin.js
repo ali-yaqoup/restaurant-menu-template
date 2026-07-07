@@ -1,5 +1,5 @@
-import { auth, db, storage, initError, isFirebaseReady } from './firebase-config.js';
-import { getAuthErrorMessage, getFirestoreErrorMessage } from './firebase-errors.js';
+import { auth, db, isFirebaseReady } from './firebase-config.js?v=4';
+import { getAuthErrorMessage, getFirestoreErrorMessage, formatAppError } from './firebase-errors.js';
 import {
   signInWithEmailAndPassword,
   signOut,
@@ -18,13 +18,10 @@ import {
   setDoc,
   writeBatch
 } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-import {
-  getDownloadURL,
-  ref,
-  uploadBytes
-} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
 
 const UI_PREFS_KEY = 'taste-admin-ui-prefs';
+const CLOUDINARY_CLOUD_NAME = window.CLOUDINARY_CLOUD_NAME || '';
+const CLOUDINARY_UPLOAD_PRESET = window.CLOUDINARY_UPLOAD_PRESET || '';
 const DEFAULT_RESTAURANT_ID = 'taste';
 const DEFAULT_RESTAURANT = {
   name: { en: 'Taste Restaurant', ar: 'مطعم تيست' },
@@ -55,7 +52,7 @@ const DEFAULT_ITEMS = [
     id: 'truffle-burger',
     categoryId: 'burgers',
     price: 8,
-    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80',
     name: { en: 'Truffle Burger', ar: 'برغر الترفل' },
     description: { en: 'Premium beef with truffle aioli.', ar: 'لحم فاخر وصلصة ترافل.' },
     tags: { en: ['Premium', 'Chef Special'], ar: ['فاخر', 'مميز'] },
@@ -68,7 +65,7 @@ const DEFAULT_ITEMS = [
     id: 'cheese-burger',
     categoryId: 'burgers',
     price: 7,
-    image: 'https://images.unsplash.com/photo-1550547660-9454987c1f0f?auto=format&fit=crop&w=600&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1550547660-9454987c1f0f?auto=format&fit=crop&w=600&q=80',
     name: { en: 'Cheese Burger', ar: 'برغر الجبن' },
     description: { en: 'Classic smash burger with cheddar.', ar: 'برغر كلاسيكي بالجبنة.' },
     tags: { en: ['Classic'], ar: ['كلاسيكي'] },
@@ -81,7 +78,7 @@ const DEFAULT_ITEMS = [
     id: 'margherita-pizza',
     categoryId: 'pizza',
     price: 9,
-    image: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=600&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=600&q=80',
     name: { en: 'Margherita Pizza', ar: 'بيتزا مارغريتا' },
     description: { en: 'Tomato, mozzarella, basil.', ar: 'طماطم وموزاريلا وريحان.' },
     tags: { en: ['Vegetarian'], ar: ['نباتي'] },
@@ -100,9 +97,10 @@ const state = {
   currentRole: null,
   currentUser: null,
   darkMode: true,
-  pendingImage: null,
-  pendingImageTarget: 'logo',
-  cropper: null,
+  logoCropper: null,
+  logoObjectUrl: '',
+  isLogoUploading: false,
+  cloudinaryReady: false,
   confirmCallback: null,
   dragId: null,
   currentItemId: null,
@@ -139,9 +137,15 @@ const elements = {
   adminQrImg: document.getElementById('admin-qr-img'),
   viewLiveMenuBtn: document.getElementById('view-live-menu-btn'),
   settingsLogoPreview: document.getElementById('settings-logo-preview'),
-  settingsLogoInput: document.getElementById('settings-logo-input'),
+  settingsLogoUrl: document.getElementById('settings-logo-url'),
+  logoFile: document.getElementById('logoFile'),
+  logoPreview: document.getElementById('logoPreview'),
+  cropContainer: document.getElementById('cropContainer'),
+  cropImage: document.getElementById('cropImage'),
+  cropConfirm: document.getElementById('cropConfirm'),
+  logoUploadStatus: document.getElementById('logoUploadStatus'),
   itemImgPreview: document.getElementById('item-img-preview'),
-  itemImageInput: document.getElementById('item-image-input'),
+  imageUrl: document.getElementById('imageUrl'),
   itemModalTitle: document.getElementById('item-modal-title'),
   categoryModalTitle: document.getElementById('category-modal-title'),
   itemEditId: document.getElementById('item-edit-id'),
@@ -150,9 +154,6 @@ const elements = {
   itemCategorySelect: document.getElementById('item-category'),
   itemsCategoryFilter: document.getElementById('items-category-filter'),
   itemAvailable: document.getElementById('item-available'),
-  cropperModal: document.getElementById('modal-cropper'),
-  cropperTarget: document.getElementById('cropper-target-img'),
-  cropSaveBtn: document.getElementById('btn-crop-save'),
   confirmModal: document.getElementById('modal-confirm'),
   confirmTitle: document.getElementById('confirm-title'),
   confirmMessage: document.getElementById('confirm-message'),
@@ -199,11 +200,7 @@ function init() {
 
   if (!isFirebaseReady) {
     showLogin();
-    showLoginError(
-      initError
-        ? `Firebase failed to initialize: ${initError.message}`
-        : 'Firebase is not configured. Check firebase-config.js.'
-    );
+    showLoginError('Firebase is not configured. Check firebase-config.js.');
     return;
   }
 
@@ -228,7 +225,7 @@ async function handleAuthStateChange(user) {
   } catch (error) {
     console.error('Auth profile load failed:', error);
     showLogin();
-    showLoginError(error.message || getFirestoreErrorMessage(error));
+    showLoginError(formatAppError(error));
     try {
       await signOut(auth);
     } catch (signOutError) {
@@ -239,11 +236,22 @@ async function handleAuthStateChange(user) {
 
 async function loadUserProfile(user) {
   const userRef = doc(db, 'users', user.uid);
-  const snapshot = await getDoc(userRef);
+  let snapshot;
+
+  try {
+    snapshot = await getDoc(userRef);
+  } catch (error) {
+    if (error.code === 'permission-denied') {
+      throw Object.assign(new Error(formatAppError(error)), { code: error.code });
+    }
+    throw error;
+  }
 
   if (!snapshot.exists()) {
     throw new Error(
-      'Admin profile not found. Create a users/' + user.uid + ' document in Firestore with role and restaurantId.'
+      'ملف الأدمن غير موجود. من Firebase Console → Firestore أنشئ مستند:\n' +
+      `users/${user.uid}\n` +
+      'بالحقول: { "email": "' + (user.email || '') + '", "role": "restaurant_admin", "restaurantId": "taste" }'
     );
   }
 
@@ -281,9 +289,10 @@ function bindEvents() {
   elements.settingsForm.addEventListener('submit', handleSettingsSave);
   elements.itemForm.addEventListener('submit', handleItemSave);
   elements.categoryForm.addEventListener('submit', handleCategorySave);
-  elements.settingsLogoInput.addEventListener('change', (event) => handleImageSelection(event, 'logo'));
-  elements.itemImageInput.addEventListener('change', (event) => handleImageSelection(event, 'item'));
-  elements.cropSaveBtn.addEventListener('click', applyCropAndOptimize);
+  elements.settingsLogoUrl.addEventListener('input', updateLogoPreview);
+  elements.logoFile?.addEventListener('change', handleLogoFileChange);
+  elements.cropConfirm?.addEventListener('click', handleLogoCropConfirm);
+  elements.imageUrl.addEventListener('input', updateItemImagePreview);
   elements.btnExportJson.addEventListener('click', exportMenuJson);
   elements.importJsonInput.addEventListener('change', importMenuJson);
   elements.btnBackup.addEventListener('click', createLiveBackup);
@@ -304,7 +313,6 @@ function bindEvents() {
   window.closeCategoryModal = closeCategoryModal;
   window.openAddItemModal = openAddItemModal;
   window.closeItemModal = closeItemModal;
-  window.closeCropperModal = closeCropperModal;
   window.deleteCategory = deleteCategory;
   window.deleteItem = deleteItem;
   window.toggleItemAvailability = toggleItemAvailability;
@@ -497,7 +505,272 @@ function populateSettingsForm() {
   elements.settingsPortalRole.value = config.accessControl?.role || state.currentRole || 'super_admin';
   elements.settingsCustomDomain.value = config.customDomain || '';
   elements.settingsDarkMode.checked = state.darkMode;
-  elements.settingsLogoPreview.src = config.logoUrl || 'assets/logo.svg';
+  elements.settingsLogoUrl.value = config.logoUrl || '';
+  updateLogoPreview();
+  resetLogoCropper();
+  updateCloudinaryConfigStatus();
+}
+
+function updateLogoPreview() {
+  const url = elements.settingsLogoUrl.value.trim();
+  if (url) {
+    elements.settingsLogoPreview.src = url;
+    elements.settingsLogoPreview.hidden = false;
+    if (elements.logoPreview) {
+      elements.logoPreview.src = url;
+      elements.logoPreview.hidden = false;
+    }
+  } else {
+    elements.settingsLogoPreview.removeAttribute('src');
+    elements.settingsLogoPreview.hidden = true;
+    if (elements.logoPreview) {
+      elements.logoPreview.removeAttribute('src');
+      elements.logoPreview.hidden = true;
+    }
+  }
+}
+
+function isDataUrl(value) {
+  return /^data:/i.test(String(value || '').trim());
+}
+
+function setLogoStatus(message, type = 'info') {
+  if (!elements.logoUploadStatus) return;
+  elements.logoUploadStatus.textContent = message || '';
+  if (type === 'error') {
+    elements.logoUploadStatus.style.color = '#ff6b6b';
+  } else if (type === 'success') {
+    elements.logoUploadStatus.style.color = '#6fdc8c';
+  } else {
+    elements.logoUploadStatus.style.color = '';
+  }
+}
+
+function updateCloudinaryConfigStatus() {
+  state.cloudinaryReady = Boolean(CLOUDINARY_CLOUD_NAME && CLOUDINARY_UPLOAD_PRESET);
+  if (!state.cloudinaryReady) {
+    setLogoStatus(
+      'Cloudinary config missing: set CLOUDINARY_CLOUD_NAME and CLOUDINARY_UPLOAD_PRESET. Logo upload is disabled.',
+      'error'
+    );
+  } else if (!state.isLogoUploading) {
+    setLogoStatus('Cloudinary is configured. You can upload and crop your logo.', 'info');
+  }
+  updateLogoUploadingUi();
+}
+
+function updateLogoUploadingUi() {
+  const shouldDisableUploadActions = state.isLogoUploading || !state.cloudinaryReady;
+  if (elements.logoFile) {
+    elements.logoFile.disabled = shouldDisableUploadActions;
+  }
+  if (elements.cropConfirm) {
+    elements.cropConfirm.disabled = shouldDisableUploadActions || !state.logoCropper;
+  }
+}
+
+function resetLogoCropper() {
+  if (state.logoCropper) {
+    state.logoCropper.destroy();
+    state.logoCropper = null;
+  }
+  if (state.logoObjectUrl) {
+    URL.revokeObjectURL(state.logoObjectUrl);
+    state.logoObjectUrl = '';
+  }
+  if (elements.cropContainer) {
+    elements.cropContainer.style.display = 'none';
+  }
+  if (elements.cropImage) {
+    elements.cropImage.removeAttribute('src');
+    elements.cropImage.onload = null;
+  }
+  updateLogoUploadingUi();
+}
+
+function handleLogoFileChange(event) {
+  if (!state.cloudinaryReady) {
+    setLogoStatus('Logo upload blocked: Cloudinary is not configured.', 'error');
+    event.target.value = '';
+    return;
+  }
+
+  const file = event.target.files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) {
+    setLogoStatus('Please select a valid image file for the logo.', 'error');
+    event.target.value = '';
+    return;
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    setLogoStatus('Logo file is too large. Maximum allowed size is 2MB.', 'error');
+    event.target.value = '';
+    return;
+  }
+
+  resetLogoCropper();
+  setLogoStatus('Image selected. Adjust crop area then confirm.', 'info');
+
+  state.logoObjectUrl = URL.createObjectURL(file);
+  elements.logoPreview.src = state.logoObjectUrl;
+  elements.logoPreview.hidden = false;
+  elements.cropImage.src = state.logoObjectUrl;
+  elements.cropContainer.style.display = 'flex';
+
+  if (typeof window.Cropper !== 'function') {
+    setLogoStatus('Cropper failed to load. Please refresh and try again.', 'error');
+    return;
+  }
+
+  elements.cropImage.onload = () => {
+    if (state.logoCropper) {
+      state.logoCropper.destroy();
+      state.logoCropper = null;
+    }
+    state.logoCropper = new window.Cropper(elements.cropImage, {
+      aspectRatio: 1,
+      viewMode: 1,
+      dragMode: 'move',
+      autoCropArea: 1,
+      responsive: true,
+      background: false
+    });
+    updateLogoUploadingUi();
+  };
+  if (elements.cropImage.complete) {
+    elements.cropImage.onload();
+  }
+}
+
+async function handleLogoCropConfirm() {
+  if (state.isLogoUploading) {
+    return;
+  }
+  if (!state.logoCropper) {
+    setLogoStatus('Please select and crop a logo image first.', 'error');
+    return;
+  }
+  if (!state.cloudinaryReady) {
+    setLogoStatus(
+      'Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME and CLOUDINARY_UPLOAD_PRESET first.',
+      'error'
+    );
+    return;
+  }
+
+  const cropButton = elements.cropConfirm;
+  const originalLabel = cropButton.innerHTML;
+  state.isLogoUploading = true;
+  updateLogoUploadingUi();
+  cropButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Uploading...</span>';
+  setLogoStatus('Uploading cropped logo to Cloudinary...', 'info');
+
+  try {
+    const canvas = state.logoCropper.getCroppedCanvas({
+      width: 800,
+      height: 800,
+      imageSmoothingEnabled: true,
+      imageSmoothingQuality: 'high'
+    });
+    if (!canvas) {
+      throw new Error('Could not crop image.');
+    }
+
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob((result) => {
+        if (!result) reject(new Error('Failed to convert cropped image.'));
+        else resolve(result);
+      }, 'image/png', 0.95);
+    });
+
+    const logoUrl = await uploadToCloudinaryWithRetry(blob);
+    if (isDataUrl(logoUrl)) {
+      throw new Error('Invalid Cloudinary response. Expected a hosted URL, got data URI.');
+    }
+    const optimizedLogoUrl = optimizeCloudinaryUrl(logoUrl);
+    elements.settingsLogoUrl.value = optimizedLogoUrl;
+    updateLogoPreview();
+
+    state.restaurantConfig.logoUrl = optimizedLogoUrl;
+    renderAdminBrand();
+    try {
+      assertAuthenticated();
+      await saveRestaurantToFirestore();
+    } catch (saveError) {
+      console.error('Logo URL save failed:', saveError);
+      setLogoStatus(`Logo uploaded but Firestore save failed: ${getFirestoreErrorMessage(saveError)}`, 'error');
+      return;
+    }
+
+    setLogoStatus('Logo uploaded, optimized, and saved successfully.', 'success');
+    elements.logoFile.value = '';
+    resetLogoCropper();
+  } catch (error) {
+    console.error('Logo upload failed:', error);
+    setLogoStatus(`Logo upload failed: ${error.message || 'Unknown error.'}`, 'error');
+  } finally {
+    state.isLogoUploading = false;
+    updateLogoUploadingUi();
+    cropButton.innerHTML = originalLabel;
+  }
+}
+
+function optimizeCloudinaryUrl(url) {
+  const value = String(url || '');
+  if (!value || !value.includes('/upload/')) {
+    return value;
+  }
+  return value.replace('/upload/', '/upload/w_300,h_300,c_fill,q_auto,f_auto/');
+}
+
+async function uploadToCloudinary(blob) {
+  const formData = new FormData();
+  formData.append('file', blob);
+  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+  formData.append('folder', `restaurants/${state.restaurantId}/logo`);
+
+  let response;
+  try {
+    response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+      method: 'POST',
+      body: formData
+    });
+  } catch (networkError) {
+    throw new Error('Network error while uploading to Cloudinary. Check your connection and try again.');
+  }
+
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch (jsonError) {
+    throw new Error('Cloudinary returned an unreadable response.');
+  }
+
+  if (!response.ok || !payload?.secure_url || typeof payload.secure_url !== 'string') {
+    throw new Error(payload?.error?.message || 'Cloudinary upload failed due to invalid response.');
+  }
+  return payload.secure_url;
+}
+
+async function uploadToCloudinaryWithRetry(blob) {
+  try {
+    return await uploadToCloudinary(blob);
+  } catch (firstError) {
+    console.warn('Cloudinary upload first attempt failed, retrying once...', firstError);
+    setLogoStatus('Upload failed once. Retrying...', 'info');
+    return uploadToCloudinary(blob);
+  }
+}
+
+function updateItemImagePreview() {
+  const url = elements.imageUrl.value.trim();
+  if (url) {
+    elements.itemImgPreview.src = url;
+    elements.itemImgPreview.hidden = false;
+  } else {
+    elements.itemImgPreview.removeAttribute('src');
+    elements.itemImgPreview.hidden = true;
+  }
 }
 
 function renderCategoryOptions() {
@@ -556,7 +829,7 @@ function renderItemsTable() {
       const row = document.createElement('tr');
       row.innerHTML = `
         <td><i class="fa-solid fa-grip-lines drag-handle" title="Drag to reorder"></i></td>
-        <td><img src="${escapeAttr(item.imageUrl || item.image || 'assets/logo.svg')}" alt="item" class="avatar-preview" onerror="this.src='assets/logo.svg'" /></td>
+        <td>${item.imageUrl ? `<img src="${escapeAttr(item.imageUrl)}" alt="item" class="avatar-preview" />` : '<span class="text-muted">—</span>'}</td>
         <td>${escapeHtml(item.name?.en || '')}</td>
         <td>${escapeHtml(item.name?.ar || '')}</td>
         <td>${escapeHtml(categoryName)}</td>
@@ -649,20 +922,18 @@ async function handleSettingsSave(event) {
   config.accessControl = { role: elements.settingsPortalRole.value };
   config.customDomain = sanitizeInput(elements.settingsCustomDomain.value);
   config.darkMode = state.darkMode;
-  const pendingLogo = state.pendingImageTarget === 'logo' ? state.pendingImage : null;
-  if (pendingLogo?.url) {
-    config.logoUrl = await persistImageAsset(pendingLogo, 'logos', 'logo');
+  const logoUrl = sanitizeInput(elements.settingsLogoUrl.value);
+  if (isDataUrl(logoUrl)) {
+    alert('Logo must be a hosted URL (Cloudinary), not a base64 data URL.');
+    return;
   }
+  config.logoUrl = logoUrl;
   state.restaurantConfig = config;
   applyTheme();
   renderOverview();
   renderAdminBrand();
   renderQrCode();
   populateSettingsForm();
-  if (pendingLogo?.url) {
-    state.pendingImage = null;
-    elements.settingsLogoInput.value = '';
-  }
   try {
     assertAuthenticated();
     await saveRestaurantToFirestore();
@@ -690,10 +961,7 @@ async function handleItemSave(event) {
     : null;
   const itemId = elements.itemEditId.value || `${createSlug(elements.itemNameEn.value)}-${Date.now()}`;
 
-  let imageUrl = elements.itemImgPreview.src;
-  if (state.pendingImage?.url) {
-    imageUrl = await persistImageAsset(state.pendingImage, 'items', itemId);
-  }
+  const imageUrl = sanitizeInput(elements.imageUrl.value);
 
   const itemPayload = {
     id: itemId,
@@ -712,7 +980,6 @@ async function handleItemSave(event) {
       ar: splitTags(elements.itemTagsAr.value)
     },
     isAvailable: elements.itemAvailable.checked,
-    image: imageUrl,
     imageUrl,
     orderIndex: existingItem?.orderIndex ?? state.menuItems.length,
     views: existingItem?.views ?? 0,
@@ -728,8 +995,6 @@ async function handleItemSave(event) {
     state.menuItems.push(itemPayload);
   }
 
-  state.pendingImage = null;
-  elements.itemImageInput.value = '';
   renderTables();
   renderOverview();
   try {
@@ -803,8 +1068,8 @@ function openAddItemModal() {
   elements.itemEditId.value = '';
   elements.itemAvailable.checked = true;
   elements.itemModalTitle.textContent = 'Add Menu Item';
-  elements.itemImgPreview.src = 'assets/logo.svg';
-  state.pendingImage = null;
+  elements.imageUrl.value = '';
+  updateItemImagePreview();
   document.getElementById('modal-item').classList.add('active');
 }
 
@@ -838,97 +1103,10 @@ function editItem(itemId) {
   elements.itemAvailable.checked = item.isAvailable !== false;
   elements.itemTagsEn.value = (item.tags?.en || []).join(', ');
   elements.itemTagsAr.value = (item.tags?.ar || []).join(', ');
-  elements.itemImgPreview.src = item.imageUrl || item.image || 'assets/logo.svg';
+  elements.imageUrl.value = item.imageUrl || item.image || '';
+  updateItemImagePreview();
   elements.itemModalTitle.textContent = 'Edit Menu Item';
-  state.pendingImage = null;
   document.getElementById('modal-item').classList.add('active');
-}
-
-function handleImageSelection(event, target) {
-  const file = event.target.files?.[0];
-  if (!file) return;
-  state.pendingImageTarget = target;
-  const reader = new FileReader();
-  reader.onload = async () => {
-    const optimized = await optimizeImage(reader.result, file.type);
-    state.pendingImage = { file, url: optimized, name: file.name };
-    if (target === 'logo') {
-      elements.settingsLogoPreview.src = optimized;
-    } else {
-      elements.itemImgPreview.src = optimized;
-    }
-    document.getElementById('modal-cropper').classList.add('active');
-    elements.cropperTarget.src = optimized;
-    if (state.cropper) {
-      state.cropper.replace(optimized);
-    } else {
-      state.cropper = new window.Cropper(elements.cropperTarget, { aspectRatio: target === 'logo' ? 1 : 4 / 3, viewMode: 1, autoCropArea: 1 });
-    }
-  };
-  reader.readAsDataURL(file);
-}
-
-function closeCropperModal() {
-  document.getElementById('modal-cropper').classList.remove('active');
-}
-
-async function applyCropAndOptimize() {
-  if (!state.cropper) return;
-  const cropSize = state.pendingImageTarget === 'logo'
-    ? { width: 800, height: 800 }
-    : { width: 1200, height: 800 };
-  const canvas = state.cropper.getCroppedCanvas(cropSize);
-  const imageDataUrl = canvas.toDataURL('image/webp', 0.82);
-  state.pendingImage = { ...state.pendingImage, url: imageDataUrl };
-  if (state.pendingImageTarget === 'logo') {
-    elements.settingsLogoPreview.src = imageDataUrl;
-  } else {
-    elements.itemImgPreview.src = imageDataUrl;
-  }
-  closeCropperModal();
-}
-
-async function optimizeImage(dataUrl, mimeType) {
-  const img = await loadImage(dataUrl);
-  const canvas = document.createElement('canvas');
-  const maxWidth = 1600;
-  const scale = Math.min(1, maxWidth / img.width);
-  canvas.width = Math.round(img.width * scale);
-  canvas.height = Math.round(img.height * scale);
-  const context = canvas.getContext('2d');
-  context.drawImage(img, 0, 0, canvas.width, canvas.height);
-  return canvas.toDataURL(mimeType?.includes('png') ? 'image/png' : 'image/webp', 0.82);
-}
-
-function loadImage(dataUrl) {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = reject;
-    image.src = dataUrl;
-  });
-}
-
-async function persistImageAsset(imagePayload, folder, filenamePrefix) {
-  if (!imagePayload?.url) return '';
-  assertAuthenticated();
-  if (!storage) {
-    throw new Error('Firebase Storage is not available.');
-  }
-
-  const response = await fetch(imagePayload.url);
-  const blob = await response.blob();
-  const extension = getImageExtension(blob.type);
-  const storagePath = `restaurants/${state.restaurantId}/${folder}/${filenamePrefix}-${Date.now()}.${extension}`;
-  const storageRef = ref(storage, storagePath);
-  await uploadBytes(storageRef, blob, { contentType: blob.type || 'image/webp' });
-  return getDownloadURL(storageRef);
-}
-
-function getImageExtension(mimeType) {
-  if (mimeType?.includes('png')) return 'png';
-  if (mimeType?.includes('jpeg') || mimeType?.includes('jpg')) return 'jpg';
-  return 'webp';
 }
 
 function deleteCategory(categoryId) {
@@ -1017,61 +1195,42 @@ async function duplicateItem(itemId) {
     orderClicks: 0
   };
   state.menuItems.push(copy);
+  persistState();
   renderTables();
   renderOverview();
-  try {
-    assertAuthenticated();
-    await saveMenuDataToFirestore();
-  } catch (error) {
-    state.menuItems = state.menuItems.filter((entry) => entry.id !== copy.id);
-    renderTables();
-    renderOverview();
-    console.error('Duplicate item failed:', error);
-    alert(getFirestoreErrorMessage(error));
+  if (auth?.currentUser) {
+    saveMenuDataToFirestore();
   }
 }
 
-async function handleCategoryDrop(targetId) {
+function handleCategoryDrop(targetId) {
   if (!state.dragId || state.dragId === targetId) return;
   const fromIndex = state.categories.findIndex((entry) => entry.id === state.dragId);
   const toIndex = state.categories.findIndex((entry) => entry.id === targetId);
   if (fromIndex < 0 || toIndex < 0) return;
-  const previous = state.categories.map((entry) => ({ ...entry }));
   const [moved] = state.categories.splice(fromIndex, 1);
   state.categories.splice(toIndex, 0, moved);
   state.categories = state.categories.map((entry, index) => ({ ...entry, orderIndex: index }));
+  persistState();
   renderTables();
-  try {
-    assertAuthenticated();
-    await saveMenuDataToFirestore();
-  } catch (error) {
-    state.categories = previous;
-    renderTables();
-    console.error('Category reorder failed:', error);
-    alert(getFirestoreErrorMessage(error));
+  if (auth?.currentUser) {
+    saveMenuDataToFirestore();
   }
 }
 
-async function handleItemDrop(targetId) {
+function handleItemDrop(targetId) {
   if (!state.dragId || state.dragId === targetId) return;
   const fromIndex = state.menuItems.findIndex((entry) => entry.id === state.dragId);
   const toIndex = state.menuItems.findIndex((entry) => entry.id === targetId);
   if (fromIndex < 0 || toIndex < 0) return;
-  const previous = state.menuItems.map((entry) => ({ ...entry }));
   const [moved] = state.menuItems.splice(fromIndex, 1);
   state.menuItems.splice(toIndex, 0, moved);
   state.menuItems = state.menuItems.map((entry, index) => ({ ...entry, orderIndex: index }));
+  persistState();
   renderTables();
   renderOverview();
-  try {
-    assertAuthenticated();
-    await saveMenuDataToFirestore();
-  } catch (error) {
-    state.menuItems = previous;
-    renderTables();
-    renderOverview();
-    console.error('Item reorder failed:', error);
-    alert(getFirestoreErrorMessage(error));
+  if (auth?.currentUser) {
+    saveMenuDataToFirestore();
   }
 }
 
@@ -1101,16 +1260,17 @@ function importMenuJson(event) {
       state.restaurantConfig = { ...state.restaurantConfig, ...(parsed.restaurant || {}) };
       state.categories = parsed.categories || [];
       state.menuItems = parsed.menuItems || [];
+      persistUiPreferences();
       renderCategoryOptions();
       renderTables();
       renderOverview();
       populateSettingsForm();
-      assertAuthenticated();
-      await saveMenuDataToFirestore();
+      if (auth?.currentUser) {
+        await saveMenuDataToFirestore();
+      }
       alert('Menu import complete.');
     } catch (error) {
-      console.error('Menu import failed:', error);
-      alert(error instanceof SyntaxError ? 'The selected file is not a valid menu JSON export.' : getFirestoreErrorMessage(error));
+      alert('The selected file is not a valid menu JSON export.');
     }
   };
   reader.readAsText(file);

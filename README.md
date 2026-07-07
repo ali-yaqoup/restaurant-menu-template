@@ -1,13 +1,13 @@
 # Taste Restaurant - Premium Digital Menu
 
-A luxurious, mobile-first digital menu and admin dashboard for restaurants. The project now includes a working admin console with theme control, image upload and crop flow, drag-and-drop category and item reordering, stock toggling, item duplication, JSON import/export, analytics summaries, QR code generation, backups, and responsive mobile-friendly controls.
+A luxurious, mobile-first digital menu and admin dashboard for restaurants. The project now includes a working admin console with theme control, image URL management, drag-and-drop category and item reordering, stock toggling, item duplication, JSON import/export, analytics summaries, QR code generation, backups, and responsive mobile-friendly controls.
 
 ## Included capabilities
 
 - Public menu with bilingual English/Arabic support and WhatsApp ordering
 - Admin dashboard for restaurant owners and staff editors
 - Theme color editing from the dashboard
-- Image upload + crop + compression before save
+- Image URLs for menu items and restaurant logo
 - Drag-and-drop reorder for categories and menu items
 - Availability toggle (In Stock / Out of Stock)
 - Duplicate existing items

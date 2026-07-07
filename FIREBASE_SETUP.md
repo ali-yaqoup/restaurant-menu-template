@@ -23,15 +23,28 @@
 
 ---
 
-## الخطوة 3: إضافة صلاحيات المستخدم في Firestore
+## الخطوة 3: إضافة صلاحيات المستخدم في Firestore (مهم جداً)
 
-من Firestore → **Start collection** → اسم المجموعة: `users`
+> إذا ظهر خطأ **Missing or insufficient permissions** بعد تسجيل الدخول، السبب غالباً أحد اثنين:
+> - قواعد Firestore غير منشورة
+> - مستند `users/{uid}` غير موجود
 
-أنشئ مستنداً بـ **Document ID** = `UID` الخاص بالمستخدم (من صفحة Authentication):
+### أ) انسخ قواعد الأمان
+
+1. افتح Firebase Console → **Firestore Database** → **Rules**
+2. انسخ محتوى ملف `firestore.rules` من المشروع والصقه
+3. اضغط **Publish**
+
+### ب) أنشئ مستند الأدمن
+
+1. من **Authentication** → **Users** انسخ **User UID** للمستخدم `admin@menutest.com`
+2. من **Firestore** → **Start collection** → Collection ID: `users`
+3. Document ID = **UID** الذي نسخته (مثال: `kR3xYz9Abc...`)
+4. أضف الحقول:
 
 ```json
 {
-  "email": "admin@restaurant.com",
+  "email": "admin@menutest.com",
   "role": "restaurant_admin",
   "restaurantId": "taste"
 }
@@ -53,7 +66,7 @@
 npm install -g firebase-tools
 firebase login
 firebase use menutest-78a3e
-firebase deploy --only firestore:rules,storage
+firebase deploy --only firestore:rules
 ```
 
 ---
@@ -116,7 +129,6 @@ restaurants/{restaurantId}
 |---------|------|
 | لا يمكن تسجيل الدخول | تأكد من تفعيل Email/Password في Authentication |
 | Permission denied عند الحفظ | أضف مستند `users/{uid}` مع `restaurantId` و `role` |
-| الصور لا تُرفع | انشر `storage.rules` وتأكد من تسجيل الدخول |
 | القائمة لا تتحدث | تحقق من `firebase-config.js` وافتح Console للأخطاء |
 | الإحصائيات لا تُحسب | انشر `firestore.rules` المحدّثة (تسمح بزيادة العدادات من القائمة العامة) |
 
