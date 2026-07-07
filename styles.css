@@ -1712,6 +1712,54 @@ body:lang(ar) .footer-col h3 {
     color: var(--text-muted);
 }
 
+.waytech-credit {
+    margin-top: 14px;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    opacity: 0.6;
+    transition: opacity var(--transition-fast);
+}
+
+.waytech-credit:hover {
+    opacity: 0.95;
+}
+
+.waytech-credit-inner {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.waytech-text {
+    color: var(--text-muted);
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 500;
+}
+
+.waytech-logo-lockup {
+    height: 38px;
+    width: auto;
+    display: block;
+    border-radius: 6px;
+    opacity: 0.88;
+    filter: drop-shadow(0 0 8px rgba(0, 194, 255, 0.22));
+    transition: opacity var(--transition-fast), filter var(--transition-fast), transform var(--transition-fast);
+}
+
+.waytech-credit:hover .waytech-logo-lockup {
+    opacity: 1;
+    filter: drop-shadow(0 0 12px rgba(0, 194, 255, 0.5)) drop-shadow(0 0 20px rgba(37, 99, 235, 0.2));
+    transform: translateY(-1px);
+}
+
+@media (max-width: 480px) {
+    .waytech-logo-lockup {
+        height: 34px;
+    }
+}
+
 /* 11. CSS Micro-Animations & Fade ins */
 .animate-fade-in {
     opacity: 0;
