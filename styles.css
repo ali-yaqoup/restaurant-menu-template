@@ -352,8 +352,8 @@ button, input {
     width: 100%;
     height: var(--header-height);
     background-color: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
     border-bottom: var(--border-glass);
     z-index: 100;
     transition: all var(--transition-normal);
