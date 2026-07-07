@@ -56,7 +56,6 @@ body.dark {
     --glass-bg: rgba(18, 18, 18, 0.75);
     --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     --overlay-bg: rgba(0, 0, 0, 0.85);
-    --category-nav-bg: rgba(10, 10, 10, 0.9);
     --input-bg: rgba(255, 255, 255, 0.03);
     --input-bg-focus: rgba(255, 255, 255, 0.06);
     --btn-icon-bg: rgba(255, 255, 255, 0.05);
@@ -102,7 +101,6 @@ html.light {
     --glass-bg: rgba(255, 255, 255, 0.88);
     --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     --overlay-bg: rgba(0, 0, 0, 0.45);
-    --category-nav-bg: rgba(255, 255, 255, 0.92);
     --input-bg: rgba(0, 0, 0, 0.04);
     --input-bg-focus: rgba(0, 0, 0, 0.06);
     --btn-icon-bg: rgba(0, 0, 0, 0.05);
@@ -125,25 +123,16 @@ html.light .main-header {
     box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
 }
 
-body.light .category-nav,
-html.light .category-nav {
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-}
-
 body.light .search-wrapper,
 html.light .search-wrapper {
     background-color: var(--surface);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-body.light .category-btn,
-html.light .category-btn {
+body.light .btn-filter,
+html.light .btn-filter {
     background-color: var(--surface);
-}
-
-body.dark .category-nav,
-html.dark .category-nav {
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 /* 2. Base Reset & Layout Setup */
@@ -171,13 +160,14 @@ body {
 
 body,
 .main-header,
-.category-nav,
 .menu-card,
 .cart-content,
 .main-footer,
 .expired-card,
 .search-wrapper,
-.category-btn,
+.btn-filter,
+.filter-modal-panel,
+.filter-category-btn,
 .btn-icon {
     transition: var(--theme-transition);
 }
@@ -335,7 +325,8 @@ button, input {
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 16px;
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
 }
 
 @media (min-width: 768px) {
@@ -366,7 +357,9 @@ button, input {
     height: 100%;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 16px;
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+    gap: 8px;
 }
 
 @media (min-width: 768px) {
@@ -379,14 +372,19 @@ button, input {
     display: flex;
     align-items: center;
     gap: 12px;
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
 }
 
 .nav-logo {
     height: 48px;
     width: auto;
+    flex-shrink: 0;
     object-fit: contain;
     transition: transform var(--transition-normal);
 }
+
 
 .nav-brand:hover .nav-logo {
     transform: rotate(5deg) scale(1.05);
@@ -398,8 +396,13 @@ button, input {
     font-weight: 700;
     background: var(--brand-gradient);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     letter-spacing: 1px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
 }
 
 body:lang(ar) .brand-text {
@@ -411,6 +414,7 @@ body:lang(ar) .brand-text {
     display: flex;
     align-items: center;
     gap: 10px;
+    flex-shrink: 0;
 }
 
 @media (min-width: 768px) {
@@ -505,7 +509,9 @@ body:lang(ar) .brand-text {
 .hero-content {
     max-width: 650px;
     margin: 0 auto;
-    padding: 0 24px;
+    width: 100%;
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
 }
 
 .hero-logo-container {
@@ -571,19 +577,91 @@ body:lang(ar) .restaurant-slogan {
     font-size: 0.8rem;
 }
 
-/* Search Bar styling */
+/* Search Bar + Filter styling */
 .search-container {
     margin-top: 32px;
 }
 
+.search-row {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+    width: 100%;
+    max-width: 560px;
+    margin: 0 auto;
+}
+
 .search-wrapper {
     position: relative;
-    max-width: 480px;
-    margin: 0 auto;
+    flex: 1;
+    min-width: 0;
     border-radius: var(--border-radius-lg);
     background-color: var(--input-bg);
     border: var(--border-glass);
     transition: all var(--transition-normal);
+}
+
+.btn-filter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-shrink: 0;
+    padding: 0 18px;
+    min-height: 52px;
+    border-radius: var(--border-radius-lg);
+    color: var(--text-secondary);
+    background-color: var(--input-bg);
+    border: var(--border-glass);
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: color var(--transition-fast), background-color var(--transition-fast),
+        border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.btn-filter-icon {
+    flex-shrink: 0;
+    transition: transform var(--transition-fast);
+}
+
+.btn-filter:hover {
+    color: var(--gold);
+    background-color: var(--gold-light);
+    border: var(--border-gold);
+    box-shadow: 0 4px 16px rgba(212, 175, 55, 0.12);
+}
+
+.btn-filter:hover .btn-filter-icon {
+    transform: scale(1.08);
+}
+
+.btn-filter:active,
+.btn-filter.button-press {
+    transform: scale(0.96);
+}
+
+.btn-filter.has-filter {
+    color: var(--text-on-gold);
+    background: linear-gradient(135deg, var(--gold) 0%, #F5D36C 100%);
+    border: var(--border-gold);
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+}
+
+.btn-filter.has-filter:hover {
+    color: var(--text-on-gold);
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+}
+
+@media (max-width: 480px) {
+    .search-row {
+        gap: 8px;
+    }
+
+    .btn-filter span {
+        display: none;
+    }
 }
 
 .search-wrapper:focus-within {
@@ -643,77 +721,152 @@ body:lang(ar) .restaurant-slogan {
     display: block;
 }
 
-/* 6. Sticky Category Navigation Bar */
-.category-nav {
-    position: sticky;
-    top: var(--header-height);
-    background-color: var(--category-nav-bg);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border-bottom: var(--border-glass);
-    z-index: 90;
-    padding: 14px 0;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    transition: background-color var(--transition-normal);
+/* 6. Category Filter Modal */
+.filter-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 150;
+    visibility: hidden;
+    pointer-events: none;
 }
 
-.category-scroll-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 16px;
+.filter-modal.active {
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.filter-modal-overlay {
+    position: absolute;
+    inset: 0;
+    background-color: var(--overlay-bg);
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+}
+
+.filter-modal.active .filter-modal-overlay {
+    opacity: 1;
+}
+
+.filter-modal-panel {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 2;
+    width: calc(100% - 32px);
+    max-width: 420px;
+    max-height: min(70vh, 520px);
+    background-color: var(--bg-color);
+    border: var(--border-glass);
+    border-radius: var(--border-radius-md);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
     display: flex;
-    gap: 12px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+    flex-direction: column;
+    overflow: hidden;
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.94);
+    transition: opacity var(--transition-normal), transform var(--transition-normal);
 }
 
-@media (min-width: 768px) {
-    .category-scroll-container {
-        padding: 0 24px;
-    }
+body.light .filter-modal-panel,
+html.light .filter-modal-panel {
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.15);
 }
 
-.category-scroll-container::-webkit-scrollbar {
-    display: none; /* Safari and Chrome */
+.filter-modal.active .filter-modal-panel {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
 }
 
-.dynamic-categories-bar-wrapper {
-    display: inline-flex;
-    gap: 12px;
-}
-
-.category-btn {
-    display: inline-flex;
+.filter-modal-header {
+    display: flex;
     align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 20px 16px;
+    border-bottom: var(--border-glass);
+}
+
+.filter-modal-header h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.filter-categories-list {
+    display: flex;
+    flex-direction: column;
     gap: 8px;
-    padding: 10px 20px;
-    border-radius: 30px;
+    flex: 1;
+    min-height: 120px;
+    padding: 16px 20px 24px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.filter-category-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: var(--border-radius-sm);
     color: var(--text-secondary);
     background-color: var(--input-bg);
     border: var(--border-glass);
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     font-weight: 600;
-    white-space: nowrap;
-    transition: all var(--transition-fast);
+    text-align: start;
+    transition: color var(--transition-fast), background-color var(--transition-fast),
+        border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 
-.category-btn i {
+.filter-category-btn i {
     font-size: 1rem;
+    width: 20px;
+    text-align: center;
+    color: var(--gold);
 }
 
-.category-btn:hover {
+.filter-category-btn:hover {
     color: var(--gold);
     background-color: var(--gold-light);
     border: var(--border-gold);
 }
 
-.category-btn.active {
+.filter-category-btn:active,
+.filter-category-btn.button-press {
+    transform: scale(0.98);
+}
+
+.filter-category-btn.active {
     color: var(--text-on-gold);
     background: linear-gradient(135deg, var(--gold) 0%, #F5D36C 100%);
     border: var(--border-gold);
     box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+}
+
+.filter-category-btn.active i {
+    color: var(--text-on-gold);
+}
+
+@media (max-width: 576px) {
+    .filter-modal-panel {
+        left: 0;
+        right: 0;
+        top: auto;
+        bottom: 0;
+        width: 100%;
+        max-width: none;
+        max-height: 75vh;
+        border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
+        transform: translateY(100%);
+    }
+
+    .filter-modal.active .filter-modal-panel {
+        transform: translateY(0);
+    }
 }
 
 /* 7. Menu Main Content Section */
@@ -1621,4 +1774,190 @@ body:lang(ar) .footer-col h3 {
     opacity: 1;
     transform: translateX(-50%) scale(1);
     bottom: -36px;
+}
+
+/* ==========================================================================
+   Mobile Responsiveness
+   ========================================================================== */
+@media (max-width: 767px) {
+    :root {
+        --header-height: 64px;
+    }
+
+    .nav-logo {
+        height: 36px;
+    }
+
+    .brand-text {
+        font-size: 1rem;
+        letter-spacing: 0.3px;
+    }
+
+    .nav-actions {
+        gap: 6px;
+    }
+
+    .btn-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .btn-icon i {
+        font-size: 1rem;
+    }
+
+    #lang-toggle {
+        width: 40px;
+        padding: 0;
+        gap: 0;
+    }
+
+    #lang-toggle .lang-text {
+        display: none;
+    }
+
+    .hero-section {
+        padding-top: calc(var(--header-height) + 24px);
+        padding-bottom: 28px;
+    }
+
+    .hero-logo {
+        height: 88px;
+    }
+
+    .restaurant-name {
+        font-size: 1.75rem;
+        letter-spacing: 0.5px;
+        line-height: 1.25;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+        hyphens: auto;
+    }
+
+    body:lang(ar) .restaurant-name {
+        font-size: 1.6rem;
+    }
+
+    .restaurant-slogan {
+        font-size: 1rem;
+        margin-bottom: 16px;
+        padding: 0 4px;
+    }
+
+    body:lang(ar) .restaurant-slogan {
+        font-size: 0.95rem;
+    }
+
+    .gold-divider {
+        margin: 16px auto 24px;
+        max-width: 240px;
+    }
+
+    .search-container {
+        margin-top: 20px;
+    }
+
+    .search-wrapper input {
+        padding: 13px 40px 13px 44px;
+        font-size: 16px;
+    }
+
+    .search-icon {
+        left: 14px;
+        font-size: 1rem;
+    }
+
+    .search-clear {
+        right: 14px;
+    }
+
+    .btn-filter {
+        width: 48px;
+        min-width: 48px;
+        padding: 0;
+        min-height: 48px;
+        border-radius: var(--border-radius-md);
+    }
+
+    .section-header {
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+    }
+
+    .section-header h2 {
+        font-size: 1.25rem;
+        flex: 1;
+        min-width: 0;
+        line-height: 1.3;
+    }
+
+    #items-count-display {
+        font-size: 0.8rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .menu-main {
+        padding: 24px 0 48px;
+    }
+
+    .card-info {
+        padding: 16px;
+        gap: 10px;
+    }
+
+    .card-title {
+        font-size: 1.05rem;
+    }
+
+    .floating-whatsapp-btn {
+        bottom: max(16px, env(safe-area-inset-bottom));
+        right: max(16px, env(safe-area-inset-right));
+        width: 54px;
+        height: 54px;
+        font-size: 1.75rem;
+    }
+
+    .main-footer {
+        padding: 40px 0 max(24px, env(safe-area-inset-bottom));
+    }
+}
+
+@media (max-width: 380px) {
+    .brand-text {
+        font-size: 0.85rem;
+    }
+
+    .nav-logo {
+        height: 32px;
+    }
+
+    .nav-brand {
+        gap: 8px;
+    }
+
+    .restaurant-name {
+        font-size: 1.5rem;
+    }
+
+    body:lang(ar) .restaurant-name {
+        font-size: 1.35rem;
+    }
+
+    .search-row {
+        gap: 8px;
+    }
+
+    .btn-filter {
+        width: 44px;
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    .section-header h2 {
+        font-size: 1.1rem;
+    }
 }

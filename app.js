@@ -127,6 +127,8 @@ const translations = {
         title: "Taste Restaurant - Premium Digital Menu",
         slogan: "Fresh & Delicious Every Day",
         searchPlaceholder: "Search menu items...",
+        filterLabel: "Filter",
+        filterTitle: "Filter by Category",
         catAll: "All Menu",
         itemsFound: "items found",
         noItemsTitle: "No items found",
@@ -157,6 +159,8 @@ const translations = {
         title: "مطعم تيست - قائمة الطعام الرقمية المميزة",
         slogan: "طازج ولذيذ كل يوم",
         searchPlaceholder: "ابحث عن طبق...",
+        filterLabel: "تصفية",
+        filterTitle: "تصفية حسب الفئة",
         catAll: "القائمة الكاملة",
         itemsFound: "أطباق متوفرة",
         noItemsTitle: "لم يتم العثور على أطباق",
@@ -206,12 +210,18 @@ const menuGrid = document.getElementById("menu-grid");
 const emptyState = document.getElementById("empty-state");
 const searchInput = document.getElementById("menu-search");
 const searchClear = document.getElementById("search-clear");
-const categoryBtnsBar = document.getElementById("dynamic-categories-bar");
 const currentCategoryTitle = document.getElementById("current-category-title");
 const itemsCountDisplay = document.getElementById("items-count");
 const langToggle = document.getElementById("lang-toggle");
 const themeToggle = document.getElementById("theme-toggle");
 const THEME_STORAGE_KEY = "theme";
+
+// Filter modal DOM (resolved on init)
+let filterToggle = null;
+let filterModal = null;
+let filterModalClose = null;
+let filterModalOverlay = null;
+let filterCategoriesList = null;
 
 // Cart DOM Elements
 const cartToggle = document.getElementById("cart-toggle");
@@ -228,10 +238,20 @@ const floatingCartBadge = document.getElementById("floating-cart-badge");
 // QR Code DOM Element
 const qrCodeImg = document.getElementById("qr-code-img");
 
+function cacheFilterDom() {
+    filterToggle = document.getElementById("filter-toggle");
+    filterModal = document.getElementById("filter-modal");
+    filterModalClose = document.getElementById("filter-modal-close");
+    filterModalOverlay = document.querySelector("#filter-modal .filter-modal-overlay");
+    filterCategoriesList = document.getElementById("filter-categories-list");
+}
+
 // ==========================================================================
 // 4. Initialisation
 // ==========================================================================
 document.addEventListener("DOMContentLoaded", () => {
+    cacheFilterDom();
+
     const urlParams = new URLSearchParams(window.location.search);
     const rParam = urlParams.get("r");
     if (rParam && rParam.trim() !== "") {
@@ -261,6 +281,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     setupEventListeners();
     setupQrCode();
+    renderFilterModal();
 });
 
 // Setup dynamic QR code pointing to active URL
@@ -459,13 +480,16 @@ function applyDynamicThemeColors() {
 
 function applyCategories(cats) {
     categoriesList = cats;
-    renderCategoriesBar();
+    renderFilterModal();
     updateCategoryTitleText();
 }
 
 function applyMenuItems(items) {
     menuItemsList = items;
     renderMenuItems();
+    if (getFilterCategories().length > 0) {
+        renderFilterModal();
+    }
 }
 
 // ==========================================================================
@@ -572,6 +596,8 @@ function applyLanguage(lang) {
 
     // Update active category text
     updateCategoryTitleText();
+    updateFilterButtonState();
+    renderFilterModal();
 
     // Re-render items
     renderMenuItems();
@@ -602,63 +628,125 @@ function toggleLanguage() {
 }
 
 // ==========================================================================
-// 8. Category UI Renderer
+// 8. Category Filter Modal
 // ==========================================================================
-function renderCategoriesBar() {
-    if (!categoryBtnsBar) return;
-    categoryBtnsBar.innerHTML = "";
-    
-    const lang = currentLanguage;
-    
-    categoriesList.forEach(cat => {
-        const btn = document.createElement("button");
-        btn.className = `category-btn ${currentCategory === cat.id ? 'active' : ''}`;
-        btn.setAttribute("data-category", cat.id);
-        
-        // Match icon dynamically if possible or use standard dot/chevron icon
-        let iconHtml = '<i class="fa-solid fa-circle-dot"></i>';
-        
-        // Basic match mappings
-        const idLower = cat.id.toLowerCase();
-        if (idLower.includes("burger")) iconHtml = '<i class="fa-solid fa-hamburger"></i>';
-        else if (idLower.includes("pizz")) iconHtml = '<i class="fa-solid fa-pizza-slice"></i>';
-        else if (idLower.includes("drink") || idLower.includes("bever")) iconHtml = '<i class="fa-solid fa-glass-water"></i>';
-        else if (idLower.includes("dessert") || idLower.includes("sweet")) iconHtml = '<i class="fa-solid fa-ice-cream"></i>';
-        
-        btn.innerHTML = `
-            ${iconHtml}
-            <span>${cat.name[lang] || cat.name.en}</span>
-        `;
-        
-        btn.addEventListener("click", handleCategorySelect);
-        categoryBtnsBar.appendChild(btn);
+function getCategoryIconHtml(categoryId) {
+    const idLower = categoryId.toLowerCase();
+    if (idLower.includes("burger")) return '<i class="fa-solid fa-hamburger"></i>';
+    if (idLower.includes("pizz")) return '<i class="fa-solid fa-pizza-slice"></i>';
+    if (idLower.includes("drink") || idLower.includes("bever")) return '<i class="fa-solid fa-glass-water"></i>';
+    if (idLower.includes("dessert") || idLower.includes("sweet")) return '<i class="fa-solid fa-ice-cream"></i>';
+    return '<i class="fa-solid fa-circle-dot"></i>';
+}
+
+function getCategoryDisplayName(cat, lang) {
+    if (cat?.name && typeof cat.name === "object") {
+        return cat.name[lang] || cat.name.en || cat.name.ar || cat.id;
+    }
+    if (typeof cat?.name === "string") return cat.name;
+    return cat?.id || "Category";
+}
+
+function getFilterCategories() {
+    if (categoriesList.length > 0) {
+        return [...categoriesList].sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
+    }
+
+    const derived = new Map();
+    menuItemsList.forEach((item) => {
+        if (!item.categoryId || derived.has(item.categoryId)) return;
+        derived.set(item.categoryId, {
+            id: item.categoryId,
+            name: { en: item.categoryId, ar: item.categoryId },
+            orderIndex: derived.size
+        });
     });
+    return Array.from(derived.values());
+}
+
+function renderFilterModal() {
+    const list = filterCategoriesList || document.getElementById("filter-categories-list");
+    if (!list) return;
+
+    filterCategoriesList = list;
+    list.innerHTML = "";
+    const lang = currentLanguage;
+    const categories = getFilterCategories();
+
+    const allBtn = document.createElement("button");
+    allBtn.type = "button";
+    allBtn.className = `filter-category-btn ${currentCategory === "all" ? "active" : ""}`;
+    allBtn.setAttribute("data-category", "all");
+    allBtn.innerHTML = `
+        <i class="fa-solid fa-utensils"></i>
+        <span>${translations[lang].catAll}</span>
+    `;
+    allBtn.addEventListener("click", handleCategorySelect);
+    list.appendChild(allBtn);
+
+    categories.forEach((cat) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = `filter-category-btn ${currentCategory === cat.id ? "active" : ""}`;
+        btn.setAttribute("data-category", cat.id);
+        btn.innerHTML = `
+            ${getCategoryIconHtml(cat.id)}
+            <span>${getCategoryDisplayName(cat, lang)}</span>
+        `;
+        btn.addEventListener("click", handleCategorySelect);
+        list.appendChild(btn);
+    });
+
+    updateFilterButtonState();
+}
+
+function updateFilterButtonState() {
+    if (!filterToggle) return;
+    const hasFilter = currentCategory !== "all";
+    filterToggle.classList.toggle("has-filter", hasFilter);
+    filterToggle.setAttribute("aria-pressed", hasFilter ? "true" : "false");
+}
+
+function selectCategory(category) {
+    currentCategory = category;
+    updateCategoryTitleText();
+    renderMenuItems();
+    renderFilterModal();
+
+    const menuMain = document.querySelector(".menu-main");
+    if (!menuMain) return;
+
+    const offset = 100;
+    const elementPosition = menuMain.getBoundingClientRect().top + window.scrollY;
+    window.scrollTo({
+        top: elementPosition - offset,
+        behavior: "smooth"
+    });
+}
+
+function openFilterModal() {
+    cacheFilterDom();
+    if (!filterModal) return;
+
+    renderFilterModal();
+    requestAnimationFrame(() => filterModal.classList.add("active"));
+    filterToggle?.setAttribute("aria-expanded", "true");
+    document.body.style.overflow = "hidden";
+}
+
+function closeFilterModal() {
+    if (!filterModal) return;
+    filterModal.classList.remove("active");
+    filterToggle?.setAttribute("aria-expanded", "false");
+    document.body.style.overflow = "";
 }
 
 function handleCategorySelect(e) {
     const btn = e.currentTarget;
     const category = btn.getAttribute("data-category");
-
     triggerButtonPressEffect(btn);
-    
-    // Update active class styles across all buttons (including the main "All" button)
-    document.querySelectorAll(".category-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    
-    currentCategory = category;
-    updateCategoryTitleText();
-    renderMenuItems();
-
-    // Scroll to grid smoothly
-    const offset = 140;
-    const element = document.querySelector(".menu-main");
-    const elementPosition = element.getBoundingClientRect().top + window.scrollY;
-    const offsetPosition = elementPosition - offset;
-    
-    window.scrollTo({
-         top: offsetPosition,
-         behavior: "smooth"
-    });
+    selectCategory(category);
+    closeFilterModal();
 }
 
 // ==========================================================================
@@ -1053,6 +1141,8 @@ function checkoutCartToWhatsApp() {
 // 13. Event Listeners Setup
 // ==========================================================================
 function setupEventListeners() {
+    cacheFilterDom();
+
     themeToggle?.addEventListener("click", (event) => {
         triggerButtonPressEffect(event.currentTarget);
         toggleTheme();
@@ -1063,11 +1153,27 @@ function setupEventListeners() {
         toggleLanguage();
     });
 
-    // Setup main category "All" button
-    const catAllBtn = document.querySelector(".category-btn[data-category='all']");
-    if (catAllBtn) {
-        catAllBtn.addEventListener("click", handleCategorySelect);
-    }
+    filterToggle?.addEventListener("click", (event) => {
+        triggerButtonPressEffect(event.currentTarget);
+        if (filterModal?.classList.contains("active")) {
+            closeFilterModal();
+        } else {
+            openFilterModal();
+        }
+    });
+
+    filterModalClose?.addEventListener("click", (event) => {
+        triggerButtonPressEffect(event.currentTarget);
+        closeFilterModal();
+    });
+
+    filterModalOverlay?.addEventListener("click", closeFilterModal);
+
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && filterModal?.classList.contains("active")) {
+            closeFilterModal();
+        }
+    });
 
     searchInput.addEventListener("input", handleSearch);
     searchClear.addEventListener("click", (event) => {
