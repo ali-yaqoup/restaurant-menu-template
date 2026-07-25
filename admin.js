@@ -2,6 +2,7 @@ import { auth, db, isFirebaseReady } from './firebase-config.js?v=4';
 import { getAuthErrorMessage, getFirestoreErrorMessage, formatAppError } from './firebase-errors.js';
 import {
   signInWithEmailAndPassword,
+  sendPasswordResetEmail,
   signOut,
   onAuthStateChanged
 } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
@@ -286,6 +287,7 @@ function teardownFirestoreListeners() {
 
 function bindEvents() {
   elements.loginForm.addEventListener('submit', handleLogin);
+  document.getElementById('forgot-password-link')?.addEventListener('click', handleForgotPassword);
   elements.logoutBtn.addEventListener('click', handleLogout);
   elements.settingsForm.addEventListener('submit', handleSettingsSave);
   elements.itemForm.addEventListener('submit', handleItemSave);
@@ -374,12 +376,20 @@ function persistState() {
 
 function showLoginError(message) {
   elements.loginError.textContent = message;
-  elements.loginError.classList.remove('hidden');
+  elements.loginError.classList.remove('hidden', 'success');
 }
 
 function hideLoginError() {
   elements.loginError.textContent = '';
   elements.loginError.classList.add('hidden');
+  elements.loginError.classList.remove('success');
+}
+
+// Success-styled notice in the same login message slot (e.g. reset email sent)
+function showLoginNotice(message) {
+  elements.loginError.textContent = message;
+  elements.loginError.classList.remove('hidden');
+  elements.loginError.classList.add('success');
 }
 
 function setLoginLoading(isLoading) {
@@ -475,6 +485,31 @@ async function handleLogin(event) {
     showLoginError(getAuthErrorMessage(error));
   } finally {
     setLoginLoading(false);
+  }
+}
+
+// Send a Firebase password-reset email to the address typed in the email field
+async function handleForgotPassword() {
+  if (!isFirebaseReady) {
+    showLoginError('Firebase is not available. Check firebase-config.js.');
+    return;
+  }
+
+  const email = document.getElementById('login-email').value.trim();
+  if (!email) {
+    showLoginError('Type your email address above first, then click "Forgot password?".');
+    document.getElementById('login-email').focus();
+    return;
+  }
+
+  hideLoginError();
+
+  try {
+    await sendPasswordResetEmail(auth, email);
+    showLoginNotice(`Password reset link sent to ${email}. Check your inbox (and spam folder).`);
+  } catch (error) {
+    console.error('Password reset failed:', error);
+    showLoginError(getAuthErrorMessage(error));
   }
 }
 

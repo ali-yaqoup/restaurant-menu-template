@@ -292,6 +292,38 @@ body.admin-body.admin-light {
 
 body.admin-body.admin-light .login-error { color: #b91c1c; }
 
+/* Success variant of the login message slot (e.g. reset email sent) */
+.login-error.success {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #86efac;
+}
+
+body.admin-body.admin-light .login-error.success { color: #15803d; }
+
+.login-aux {
+  display: flex;
+  justify-content: flex-end;
+  margin: -6px 0 14px;
+}
+
+.forgot-password-link {
+  background: none;
+  border: none;
+  padding: 4px 2px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--admin-muted);
+  transition: color 0.2s ease;
+}
+
+.forgot-password-link:hover {
+  color: var(--admin-gold);
+  text-decoration: underline;
+}
+
 .form-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
 .form-row { display: flex; gap: 16px; flex-wrap: wrap; }
 .form-group.col-6 { flex: 1 1 calc(50% - 12px); min-width: 0; }
