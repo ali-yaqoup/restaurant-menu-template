@@ -8,7 +8,7 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@300;400;600;700&family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -17,7 +17,7 @@
     
     <!-- Admin Dashboard Styles -->
     <link rel="stylesheet" href="admin.css">
-ad>
+</head>
 <body class="admin-body">
 
     <!-- Screen Loader -->
@@ -29,37 +29,43 @@ ad>
     <div id="login-container" class="login-container">
         <div class="login-card">
             <div class="login-header">
-                <img src="assets/logo.svg" alt="Logo" class="login-logo" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=150&q=80'">
-                <h2>Admin Login</h2>
+                <div class="login-logo-frame">
+                    <i class="fa-solid fa-utensils" aria-hidden="true"></i>
+                    <img src="assets/logo.svg" alt="" class="login-logo" onerror="this.style.display='none'">
+                </div>
+                <h2>Admin Console</h2>
                 <p>Taste Restaurant Management Portal</p>
             </div>
-            
+
             <form id="login-form">
                 <div class="form-group">
                     <label for="login-email">Email Address</label>
                     <div class="input-wrapper">
-                        <i class="fa-solid fa-envelope"></i>
-                        <input type="email" id="login-email" placeholder="admin@restaurant.com" required>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="login-password">Password</label>
-                    <div class="input-wrapper">
-                        <i class="fa-solid fa-lock"></i>
-                        <input type="password" id="login-password" placeholder="••••••••" required>
+                        <i class="fa-solid fa-envelope" aria-hidden="true"></i>
+                        <input type="email" id="login-email" placeholder="admin@restaurant.com" autocomplete="email" required>
                     </div>
                 </div>
 
-                <div id="login-error" class="login-error hidden"></div>
-                
-                <button type="submit" class="btn-admin-primary">
-                    <span>Login Securely</span>
-                    <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" required>
+                        <button type="button" id="password-toggle" class="password-toggle" aria-label="Show password">
+                            <i class="fa-solid fa-eye" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="login-error" class="login-error hidden" role="alert"></div>
+
+                <button type="submit" class="btn-admin-primary btn-login">
+                    <span>Sign In</span>
+                    <i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i>
                 </button>
             </form>
             <div class="login-footer">
-                <p>Protected by Firebase Authentication & SSL.</p>
+                <p><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Protected by Firebase Authentication &amp; SSL</p>
             </div>
         </div>
     </div>
@@ -634,7 +640,24 @@ ard">
       window.CLOUDINARY_CLOUD_NAME = "t94xf7rb";
       window.CLOUDINARY_UPLOAD_PRESET = "menu_test";
     </script>
+    <script>
+      // Password visibility toggle (login screen)
+      (function () {
+        var toggle = document.getElementById('password-toggle');
+        var input = document.getElementById('login-password');
+        if (!toggle || !input) return;
+        toggle.addEventListener('click', function () {
+          var show = input.type === 'password';
+          input.type = show ? 'text' : 'password';
+          toggle.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+          var icon = toggle.querySelector('i');
+          if (icon) {
+            icon.classList.toggle('fa-eye', !show);
+            icon.classList.toggle('fa-eye-slash', show);
+          }
+        });
+      })();
+    </script>
     <script type="module" src="admin.js?v=5"></script>
 </body>
 </html>
-    <script type="module" src="admin.js?v=5"></script>
