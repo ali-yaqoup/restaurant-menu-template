@@ -2009,3 +2009,25 @@ body:lang(ar) .footer-col h3 {
         font-size: 1.1rem;
     }
 }
+
+/* ==========================================================================
+   Accessibility: respect reduced-motion + visible keyboard focus ring
+   (Added: many interactive elements set outline:none with no replacement,
+   and all keyframe animations previously played unconditionally.)
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold, #d4af37);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

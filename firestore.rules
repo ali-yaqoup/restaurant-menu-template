@@ -2,6 +2,13 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // NOTE: These rules are the ONLY real security boundary for this app.
+    // Public read is intentional (a menu is public). Public *writes* are
+    // limited to hardened, increment-only analytics counters below.
+    // Strongly recommended in production: enable Firebase App Check
+    // (reCAPTCHA v3 for web) so the anonymous analytics paths can only be
+    // called from your own domain, not arbitrary scripts.
+
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -37,16 +44,48 @@ service cloud.firestore {
         getUserRole() in ['admin', 'restaurant_admin', 'super_admin'];
     }
 
-    function isRestaurantAnalyticsUpdate() {
-      return request.auth == null &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['analytics']) &&
-        request.resource.data.analytics is map;
+    // ---- Hardened anonymous analytics writes --------------------------------
+    // A single counter change is valid only when it is a non-negative integer
+    // that increases by at most 1. This blocks the previous exploit where any
+    // anonymous client could set counters to arbitrary values (data poisoning)
+    // or create documents through the analytics path.
+
+    function incByOne(newData, oldData, key) {
+      return newData.get(key, 0) is int &&
+        newData.get(key, 0) >= oldData.get(key, 0) &&
+        newData.get(key, 0) <= oldData.get(key, 0) + 1;
     }
 
+    // Restaurant-level counter bump: only `analytics.views` /
+    // `analytics.whatsappOrders`, update-only, +1 max, nothing else touched.
+    function isRestaurantAnalyticsUpdate() {
+      return request.auth == null &&
+        resource != null &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['analytics']) &&
+        request.resource.data.analytics is map &&
+        request.resource.data.analytics
+          .diff(resource.data.get('analytics', {}))
+          .affectedKeys().hasOnly(['views', 'whatsappOrders']) &&
+        incByOne(request.resource.data.analytics, resource.data.get('analytics', {}), 'views') &&
+        incByOne(request.resource.data.analytics, resource.data.get('analytics', {}), 'whatsappOrders');
+    }
+
+    // Menu-item counter bump: only `orderClicks` / `views`, update-only, +1 max.
     function isMenuItemAnalyticsUpdate() {
       return request.auth == null &&
+        resource != null &&
         request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['orderClicks', 'views']);
+          .hasOnly(['orderClicks', 'views']) &&
+        incByOne(request.resource.data, resource.data, 'orderClicks') &&
+        incByOne(request.resource.data, resource.data, 'views');
+    }
+
+    // Fields that only a super_admin may ever change on a restaurant document.
+    // Prevents a restaurant_admin from self-activating a subscription or
+    // promoting their own access role via the settings form.
+    function touchesProtectedRestaurantFields() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['subscription', 'accessControl']);
     }
 
     match /users/{uid} {
@@ -57,7 +96,9 @@ service cloud.firestore {
     match /restaurants/{restaurantId} {
       allow read: if true;
       allow create, delete: if isRestaurantAdmin(restaurantId);
-      allow update: if isRestaurantAdmin(restaurantId) || isRestaurantAnalyticsUpdate();
+      allow update: if isSuperAdmin()
+        || (isRestaurantAdmin(restaurantId) && !touchesProtectedRestaurantFields())
+        || isRestaurantAnalyticsUpdate();
 
       match /categories/{categoryId} {
         allow read: if true;
@@ -67,7 +108,8 @@ service cloud.firestore {
 
       match /menu_items/{itemId} {
         allow read: if true;
-        allow create, update: if isRestaurantStaff(restaurantId) || isMenuItemAnalyticsUpdate();
+        allow create: if isRestaurantStaff(restaurantId);
+        allow update: if isRestaurantStaff(restaurantId) || isMenuItemAnalyticsUpdate();
         allow delete: if isRestaurantAdmin(restaurantId);
       }
 

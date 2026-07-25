@@ -307,11 +307,17 @@ function hideLoader() {
 // ==========================================================================
 // 5. Firebase Sync Engine
 // ==========================================================================
+let firestoreUnsubscribers = [];
+
 function syncWithFirestore() {
     const restaurantDocRef = doc(db, "restaurants", activeRestaurantId);
-    
+
+    // Detach any previously-attached listeners before re-subscribing so they
+    // never stack up (and stop billing/rendering after the page is dismissed).
+    teardownFirestoreListeners();
+
     // 1. Sync Restaurant Settings
-    onSnapshot(restaurantDocRef, (snapshot) => {
+    firestoreUnsubscribers.push(onSnapshot(restaurantDocRef, (snapshot) => {
         if (!snapshot.exists()) {
             console.warn(`Restaurant "${activeRestaurantId}" not found in Firestore. Loading local template...`);
             applyRestaurantConfig(fallbackRestaurant);
@@ -337,15 +343,15 @@ function syncWithFirestore() {
         console.error("Firestore sync error (settings):", error);
         applyRestaurantConfig(fallbackRestaurant);
         hideLoader();
-    });
+    }));
 
     // 2. Sync Categories (Ordered by orderIndex)
     const categoriesQuery = query(
         collection(db, "restaurants", activeRestaurantId, "categories"),
         orderBy("orderIndex", "asc")
     );
-    
-    onSnapshot(categoriesQuery, (snapshot) => {
+
+    firestoreUnsubscribers.push(onSnapshot(categoriesQuery, (snapshot) => {
         const fetchedCats = [];
         snapshot.forEach(docSnap => {
             fetchedCats.push({ id: docSnap.id, ...docSnap.data() });
@@ -359,7 +365,7 @@ function syncWithFirestore() {
     }, (error) => {
         console.error("Firestore sync error (categories):", error);
         applyCategories(fallbackCategories);
-    });
+    }));
 
     // 3. Sync Menu Items (Ordered by orderIndex)
     const itemsQuery = query(
@@ -367,7 +373,7 @@ function syncWithFirestore() {
         orderBy("orderIndex", "asc")
     );
 
-    onSnapshot(itemsQuery, (snapshot) => {
+    firestoreUnsubscribers.push(onSnapshot(itemsQuery, (snapshot) => {
         const fetchedItems = [];
         snapshot.forEach(docSnap => {
             fetchedItems.push({ id: docSnap.id, ...docSnap.data() });
@@ -381,8 +387,19 @@ function syncWithFirestore() {
     }, (error) => {
         console.error("Firestore sync error (items):", error);
         applyMenuItems(fallbackItems);
-    });
+    }));
 }
+
+// Detach all active Firestore listeners (prevents listener/cost leaks).
+function teardownFirestoreListeners() {
+    firestoreUnsubscribers.forEach((unsub) => {
+        try { unsub(); } catch (e) { /* already detached */ }
+    });
+    firestoreUnsubscribers = [];
+}
+
+// Clean up listeners when the page is unloaded or hidden (bfcache-friendly).
+window.addEventListener("pagehide", teardownFirestoreListeners, { once: true });
 
 // Show subscription expiry screen block
 function showExpiredScreen() {
@@ -435,6 +452,40 @@ function applyRestaurantConfig(data) {
     applyLanguage(currentLanguage);
 }
 
+// ==========================================================================
+// Security & utility helpers
+// ==========================================================================
+// Escape text before injecting it into innerHTML. Prevents stored XSS coming
+// from Firestore-sourced content (item names, descriptions, tags, ...).
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+// Validate a CSS color before injecting it into a <style> element. Accepts hex,
+// rgb()/rgba() and hsl()/hsla(); anything else falls back to a safe default so a
+// malicious value like "</style><script>" can never reach the DOM.
+function safeColor(value, fallback) {
+    const v = String(value ?? "").trim();
+    const ok = /^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(v) ||
+        /^rgba?\(\s*[\d.,\s%]+\)$/i.test(v) ||
+        /^hsla?\(\s*[\d.,\s%deg]+\)$/i.test(v);
+    return ok ? v : fallback;
+}
+
+// Debounce helper – avoids rebuilding the whole grid on every keystroke.
+function debounce(fn, wait) {
+    let timer;
+    return function (...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), wait);
+    };
+}
+
 function applyDynamicThemeColors() {
     const colors = restaurantConfig.colors || {};
     const dynamicStyle = document.getElementById("dynamic-theme-colors");
@@ -442,39 +493,42 @@ function applyDynamicThemeColors() {
 
     const isLight = document.body.classList.contains("light");
 
+    // Use textContent (not innerHTML) on the <style> node: CSS text is set
+    // without HTML parsing, and every value is validated via safeColor().
     if (isLight) {
         if (!colors.gold) {
-            dynamicStyle.innerHTML = "";
+            dynamicStyle.textContent = "";
             return;
         }
-        dynamicStyle.innerHTML = `
+        const gold = safeColor(colors.gold, "#9c6f13");
+        dynamicStyle.textContent = `
             html.light, body.light {
-                --primary: ${colors.gold};
-                --gold: ${colors.gold};
-                --gold-dark: ${colors.goldDark || '#7a5610'};
-                --gold-light: ${colors.goldLight || 'rgba(156, 111, 19, 0.12)'};
+                --primary: ${gold};
+                --gold: ${gold};
+                --gold-dark: ${safeColor(colors.goldDark, '#7a5610')};
+                --gold-light: ${safeColor(colors.goldLight, 'rgba(156, 111, 19, 0.12)')};
             }
         `;
         return;
     }
 
     if (colors.bg && colors.gold) {
-        dynamicStyle.innerHTML = `
+        dynamicStyle.textContent = `
             html.dark, body.dark {
-                --background: ${colors.bg};
-                --surface: ${colors.surface || '#1a1a1a'};
-                --primary: ${colors.gold};
-                --bg-color: ${colors.bg};
-                --surface-color: ${colors.surface || '#1a1a1a'};
-                --surface-card: ${colors.surfaceCard || colors.surface || '#1a1a1a'};
-                --gold: ${colors.gold};
-                --gold-dark: ${colors.goldDark || '#aa8c2c'};
-                --gold-light: ${colors.goldLight || 'rgba(212, 175, 55, 0.15)'};
-                --gold-hover: ${colors.goldHover || '#F5D36C'};
+                --background: ${safeColor(colors.bg, '#111111')};
+                --surface: ${safeColor(colors.surface, '#1a1a1a')};
+                --primary: ${safeColor(colors.gold, '#d4af37')};
+                --bg-color: ${safeColor(colors.bg, '#111111')};
+                --surface-color: ${safeColor(colors.surface, '#1a1a1a')};
+                --surface-card: ${safeColor(colors.surfaceCard || colors.surface, '#1a1a1a')};
+                --gold: ${safeColor(colors.gold, '#d4af37')};
+                --gold-dark: ${safeColor(colors.goldDark, '#aa8c2c')};
+                --gold-light: ${safeColor(colors.goldLight, 'rgba(212, 175, 55, 0.15)')};
+                --gold-hover: ${safeColor(colors.goldHover, '#F5D36C')};
             }
         `;
     } else {
-        dynamicStyle.innerHTML = "";
+        dynamicStyle.textContent = "";
     }
 }
 
@@ -691,7 +745,7 @@ function renderFilterModal() {
         btn.setAttribute("data-category", cat.id);
         btn.innerHTML = `
             ${getCategoryIconHtml(cat.id)}
-            <span>${getCategoryDisplayName(cat, lang)}</span>
+            <span>${escapeHtml(getCategoryDisplayName(cat, lang))}</span>
         `;
         btn.addEventListener("click", handleCategorySelect);
         list.appendChild(btn);
@@ -806,7 +860,7 @@ function renderMenuItems() {
         if (item.tags && item.tags[lang]) {
             item.tags[lang].forEach(tag => {
                 if (tag.trim() !== "") {
-                    tagsHtml += `<span class="tag-badge">${tag}</span>`;
+                    tagsHtml += `<span class="tag-badge">${escapeHtml(tag)}</span>`;
                 }
             });
         }
@@ -818,24 +872,28 @@ function renderMenuItems() {
         // Add to Cart disables if out of stock
         const actionDisabled = isOutOfStock ? "disabled" : "";
 
+        const safeImg = escapeHtml(item.imageUrl || '');
+        const safeName = escapeHtml(item.name[lang] || item.name.en || '');
+        const safeDesc = escapeHtml(item.description[lang] || item.description.en || "");
+        const safeId = escapeHtml(item.id);
         card.innerHTML = `
             <div class="card-img-container">
-                <img src="${item.imageUrl || ''}" alt="${item.name[lang]}" class="menu-card-img skeleton" onload="this.classList.remove('skeleton')">
+                <img src="${safeImg}" alt="${safeName}" class="menu-card-img skeleton" onload="this.classList.remove('skeleton')">
                 <span class="card-price-badge">${Number(item.price).toFixed(2)} ${currencySymbol}</span>
                 ${stockBadge}
             </div>
             <div class="card-info">
                 <div class="card-title-row">
-                    <h3 class="card-title">${item.name[lang] || item.name.en}</h3>
+                    <h3 class="card-title">${safeName}</h3>
                 </div>
-                <p class="card-description">${item.description[lang] || item.description.en || ""}</p>
+                <p class="card-description">${safeDesc}</p>
                 <div class="card-tags-row">${tagsHtml}</div>
                 <div class="card-actions">
-                    <button type="button" class="btn btn-primary" onclick="directWhatsAppOrder('${item.id}', this)" ${actionDisabled}>
+                    <button type="button" class="btn btn-primary" data-action="order" data-item-id="${safeId}" ${actionDisabled}>
                         <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
                         <span>${translations[lang].orderNow}</span>
                     </button>
-                    <button type="button" class="btn btn-secondary" onclick="addToCart('${item.id}', this)" ${actionDisabled}>
+                    <button type="button" class="btn btn-secondary" data-action="add" data-item-id="${safeId}" ${actionDisabled}>
                         <i class="fa-solid fa-cart-plus" aria-hidden="true"></i>
                         <span>${translations[lang].addToOrder}</span>
                     </button>
@@ -849,6 +907,9 @@ function renderMenuItems() {
 // ==========================================================================
 // 10. Search Input Management
 // ==========================================================================
+// Debounced grid re-render so fast typing doesn't rebuild the DOM per keystroke.
+const debouncedRenderMenuItems = debounce(renderMenuItems, 180);
+
 function handleSearch(e) {
     searchQuery = e.target.value;
     if (searchQuery.length > 0) {
@@ -856,7 +917,7 @@ function handleSearch(e) {
     } else {
         searchClear.classList.remove("show");
     }
-    renderMenuItems();
+    debouncedRenderMenuItems();
 }
 
 function clearSearch() {
@@ -1003,24 +1064,27 @@ function renderCart() {
             const cartItemEl = document.createElement("div");
             cartItemEl.className = "cart-item";
             
+            const safeCartImg = escapeHtml(item.imageUrl || '');
+            const safeCartName = escapeHtml(item.name[lang] || item.name.en || '');
+            const safeCartId = escapeHtml(item.id);
             cartItemEl.innerHTML = `
-                <img src="${item.imageUrl || ''}" alt="${item.name[lang] || item.name.en}" class="cart-item-img">
+                <img src="${safeCartImg}" alt="${safeCartName}" class="cart-item-img">
                 <div class="cart-item-info">
                     <div>
-                        <h4 class="cart-item-title">${item.name[lang] || item.name.en}</h4>
+                        <h4 class="cart-item-title">${safeCartName}</h4>
                         <span class="cart-item-price">${Number(item.price).toFixed(2)} ${currencySymbol}</span>
                     </div>
                     <div class="cart-item-controls">
                         <div class="quantity-controller">
-                            <button class="btn-qty" onclick="changeQuantity('${item.id}', -1)" aria-label="Decrease quantity">
+                            <button class="btn-qty" data-action="qty-dec" data-item-id="${safeCartId}" aria-label="Decrease quantity">
                                 <i class="fa-solid fa-minus"></i>
                             </button>
                             <span class="qty-val">${cartItem.quantity}</span>
-                            <button class="btn-qty" onclick="changeQuantity('${item.id}', 1)" aria-label="Increase quantity">
+                            <button class="btn-qty" data-action="qty-inc" data-item-id="${safeCartId}" aria-label="Increase quantity">
                                 <i class="fa-solid fa-plus"></i>
                             </button>
                         </div>
-                        <button class="btn-cart-remove" onclick="removeFromCart('${item.id}')" aria-label="Remove item">
+                        <button class="btn-cart-remove" data-action="remove" data-item-id="${safeCartId}" aria-label="Remove item">
                             <i class="fa-solid fa-trash"></i>
                         </button>
                     </div>
@@ -1179,6 +1243,28 @@ function setupEventListeners() {
     searchClear.addEventListener("click", (event) => {
         triggerButtonPressEffect(event.currentTarget);
         clearSearch();
+    });
+
+    // Delegated menu-card actions (replaces inline onclick => no attribute
+    // injection from Firestore-sourced item ids, and one listener instead of N).
+    menuGrid?.addEventListener("click", (event) => {
+        const btn = event.target.closest("[data-action]");
+        if (!btn || !menuGrid.contains(btn)) return;
+        const id = btn.getAttribute("data-item-id");
+        if (!id) return;
+        if (btn.dataset.action === "order") window.directWhatsAppOrder(id, btn);
+        else if (btn.dataset.action === "add") window.addToCart(id, btn);
+    });
+
+    // Delegated cart-item actions.
+    cartItemsContainer?.addEventListener("click", (event) => {
+        const btn = event.target.closest("[data-action]");
+        if (!btn || !cartItemsContainer.contains(btn)) return;
+        const id = btn.getAttribute("data-item-id");
+        if (!id) return;
+        if (btn.dataset.action === "qty-dec") window.changeQuantity(id, -1);
+        else if (btn.dataset.action === "qty-inc") window.changeQuantity(id, 1);
+        else if (btn.dataset.action === "remove") window.removeFromCart(id);
     });
 
     // Cart Sidebar sliders

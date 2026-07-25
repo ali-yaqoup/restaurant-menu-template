@@ -20,6 +20,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
 const UI_PREFS_KEY = 'taste-admin-ui-prefs';
+const LOCAL_STATE_KEY = 'taste-admin-menu-snapshot';
 const CLOUDINARY_CLOUD_NAME = window.CLOUDINARY_CLOUD_NAME || '';
 const CLOUDINARY_UPLOAD_PRESET = window.CLOUDINARY_UPLOAD_PRESET || '';
 const DEFAULT_RESTAURANT_ID = 'taste';
@@ -351,6 +352,24 @@ function loadUiPreferences() {
 
 function persistUiPreferences() {
   localStorage.setItem(UI_PREFS_KEY, JSON.stringify({ darkMode: state.darkMode }));
+}
+
+// Persist a local snapshot of the working menu so in-progress edits (reorder,
+// duplicate) survive a reload even before the Firestore write settles.
+// Previously this function was referenced but never defined, which threw a
+// ReferenceError and silently broke duplicate + drag-and-drop reordering.
+function persistState() {
+  try {
+    localStorage.setItem(LOCAL_STATE_KEY, JSON.stringify({
+      restaurantId: state.restaurantId,
+      restaurantConfig: state.restaurantConfig,
+      categories: state.categories,
+      menuItems: state.menuItems,
+      savedAt: Date.now()
+    }));
+  } catch (error) {
+    console.warn('Could not persist local menu snapshot', error);
+  }
 }
 
 function showLoginError(message) {
@@ -785,12 +804,49 @@ function renderCategoryOptions() {
   });
 }
 
+// Delegated click handling for the category table actions. Attached once to the
+// table body (which persists across re-renders); reads the id from the row's
+// dataset so no ids are interpolated into inline onclick attributes.
+function bindCategoriesTableActions() {
+  const tbody = elements.categoriesTableBody;
+  if (!tbody || tbody.dataset.delegated === '1') return;
+  tbody.dataset.delegated = '1';
+  tbody.addEventListener('click', (event) => {
+    const btn = event.target.closest('button[data-action]');
+    if (!btn || !tbody.contains(btn)) return;
+    const id = btn.closest('tr')?.dataset.id;
+    if (!id) return;
+    if (btn.dataset.action === 'edit') editCategory(id);
+    else if (btn.dataset.action === 'delete') deleteCategory(id);
+  });
+}
+
+// Delegated click handling for the item table actions.
+function bindItemsTableActions() {
+  const tbody = elements.itemsTableBody;
+  if (!tbody || tbody.dataset.delegated === '1') return;
+  tbody.dataset.delegated = '1';
+  tbody.addEventListener('click', (event) => {
+    const btn = event.target.closest('button[data-action]');
+    if (!btn || !tbody.contains(btn)) return;
+    const id = btn.closest('tr')?.dataset.id;
+    if (!id) return;
+    switch (btn.dataset.action) {
+      case 'edit': editItem(id); break;
+      case 'duplicate': duplicateItem(id); break;
+      case 'toggle': toggleItemAvailability(id); break;
+      case 'delete': deleteItem(id); break;
+    }
+  });
+}
+
 function renderTables() {
   renderCategoriesTable();
   renderItemsTable();
 }
 
 function renderCategoriesTable() {
+  bindCategoriesTableActions();
   elements.categoriesTableBody.innerHTML = '';
   state.categories
     .slice()
@@ -804,8 +860,8 @@ function renderCategoriesTable() {
         <td>${escapeHtml(category.name?.ar || '')}</td>
         <td>
           <div class="table-actions">
-            <button type="button" class="btn-admin-secondary" onclick="editCategory('${category.id}')"><i class="fa-solid fa-pen"></i></button>
-            <button type="button" class="btn-admin-danger" data-deleteable onclick="deleteCategory('${category.id}')"><i class="fa-solid fa-trash"></i></button>
+            <button type="button" class="btn-admin-secondary" data-action="edit"><i class="fa-solid fa-pen"></i></button>
+            <button type="button" class="btn-admin-danger" data-deleteable data-action="delete"><i class="fa-solid fa-trash"></i></button>
           </div>
         </td>`;
       row.setAttribute('draggable', 'true');
@@ -818,6 +874,7 @@ function renderCategoriesTable() {
 }
 
 function renderItemsTable() {
+  bindItemsTableActions();
   const filter = elements.itemsCategoryFilter.value;
   elements.itemsTableBody.innerHTML = '';
   const filteredItems = state.menuItems.filter((item) => filter === 'all' || item.categoryId === filter);
@@ -837,10 +894,10 @@ function renderItemsTable() {
         <td><span class="status-pill ${item.isAvailable === false ? 'out-stock' : 'in-stock'}">${item.isAvailable === false ? 'Out of Stock' : 'In Stock'}</span></td>
         <td>
           <div class="table-actions">
-            <button type="button" class="btn-admin-secondary" onclick="editItem('${item.id}')"><i class="fa-solid fa-pen"></i></button>
-            <button type="button" class="btn-admin-secondary" onclick="duplicateItem('${item.id}')"><i class="fa-solid fa-copy"></i></button>
-            <button type="button" class="btn-admin-secondary" onclick="toggleItemAvailability('${item.id}')"><i class="fa-solid fa-toggle-on"></i></button>
-            <button type="button" class="btn-admin-danger" data-deleteable onclick="deleteItem('${item.id}')"><i class="fa-solid fa-trash"></i></button>
+            <button type="button" class="btn-admin-secondary" data-action="edit"><i class="fa-solid fa-pen"></i></button>
+            <button type="button" class="btn-admin-secondary" data-action="duplicate"><i class="fa-solid fa-copy"></i></button>
+            <button type="button" class="btn-admin-secondary" data-action="toggle"><i class="fa-solid fa-toggle-on"></i></button>
+            <button type="button" class="btn-admin-danger" data-deleteable data-action="delete"><i class="fa-solid fa-trash"></i></button>
           </div>
         </td>`;
       row.setAttribute('draggable', 'true');

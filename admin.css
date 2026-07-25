@@ -325,3 +325,20 @@ body.admin-body.admin-light .admin-sidebar { background: rgba(255, 250, 242, 0.9
   .form-group.col-6, .form-group.col-4 { flex: 1 1 100%; }
   .modal-card { width: 100%; }
 }
+
+/* Accessibility: respect reduced-motion + visible keyboard focus ring */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--admin-gold, #d4af37);
+  outline-offset: 2px;
+}
