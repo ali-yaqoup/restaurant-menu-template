@@ -486,12 +486,14 @@ body:lang(ar) .brand-text {
 
 /* Theme toggle */
 .theme-toggle .theme-icon {
-    font-size: 1.15rem;
+    font-size: 1.1rem;
     line-height: 1;
+    transition: transform var(--transition-fast), color var(--transition-fast);
 }
 
 .theme-toggle:hover .theme-icon {
-    transform: scale(1.1);
+    transform: scale(1.1) rotate(15deg);
+    color: var(--gold);
 }
 
 /* Language Switch Text */

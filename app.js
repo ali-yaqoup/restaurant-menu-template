@@ -573,7 +573,9 @@ function toggleTheme() {
 function updateThemeToggleIcon(theme) {
     const icon = document.querySelector("#theme-toggle .theme-icon");
     if (!icon) return;
-    icon.textContent = theme === "light" ? "🌙" : "☀️";
+    // Font Awesome icon (inherits theme colors) instead of a colorful emoji
+    icon.classList.remove("fa-sun", "fa-moon");
+    icon.classList.add("fa-solid", theme === "light" ? "fa-moon" : "fa-sun");
 }
 
 // ==========================================================================
