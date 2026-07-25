@@ -853,7 +853,8 @@ function renderMenuItems() {
         // Manage stock status class
         const isOutOfStock = item.isAvailable === false;
         card.className = `menu-card animate-slide-up ${isOutOfStock ? 'out-of-stock' : ''}`;
-        card.style.animationDelay = `${index * 0.05}s`;
+        // Cap the stagger so long menus don't leave late cards invisible for seconds
+        card.style.animationDelay = `${Math.min(index * 0.05, 0.4)}s`;
         
         // Tags rendering
         let tagsHtml = "";
