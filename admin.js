@@ -107,6 +107,8 @@ const state = {
   dragId: null,
   currentItemId: null,
   currentCategoryId: null,
+  orders: [],
+  knownOrderIds: null,
   firestoreUnsubscribers: []
 };
 
@@ -157,6 +159,9 @@ const elements = {
   itemsCategoryFilter: document.getElementById('items-category-filter'),
   itemAvailable: document.getElementById('item-available'),
   confirmModal: document.getElementById('modal-confirm'),
+  ordersList: document.getElementById('orders-list'),
+  ordersBadge: document.getElementById('orders-badge'),
+  ordersFilter: document.getElementById('orders-status-filter'),
   confirmTitle: document.getElementById('confirm-title'),
   confirmMessage: document.getElementById('confirm-message'),
   confirmActionBtn: document.getElementById('confirm-action-btn'),
@@ -300,6 +305,7 @@ function bindEvents() {
   elements.importJsonInput.addEventListener('change', importMenuJson);
   elements.btnBackup.addEventListener('click', createLiveBackup);
   elements.confirmCancelBtn.addEventListener('click', closeConfirmModal);
+  elements.ordersFilter?.addEventListener('change', renderOrders);
 
   // Close any open modal with Escape, or by clicking its dark overlay
   document.addEventListener('keydown', (event) => {
@@ -1587,16 +1593,188 @@ function syncFromFirestore() {
       (error) => console.error('Menu items sync error:', error)
     )
   );
+
+  // Live customer orders — newest first
+  const ordersQuery = query(
+    collection(db, 'restaurants', state.restaurantId, 'orders'),
+    orderBy('createdAt', 'desc')
+  );
+  state.firestoreUnsubscribers.push(
+    onSnapshot(
+      ordersQuery,
+      (snapshot) => {
+        state.orders = snapshot.docs.map((docSnapshot) => ({
+          id: docSnapshot.id,
+          ...docSnapshot.data()
+        }));
+
+        // Notify on genuinely new arrivals (skip the initial load)
+        if (state.knownOrderIds !== null) {
+          const fresh = state.orders.filter((order) => !state.knownOrderIds.has(order.id));
+          if (fresh.length) {
+            showToast(`🛎️ وصل طلب جديد من ${fresh[0].customerName || 'زبون'}!`, 'success');
+            playOrderChime();
+          }
+        }
+        state.knownOrderIds = new Set(state.orders.map((order) => order.id));
+
+        renderOrders();
+        updateOrdersBadge();
+      },
+      (error) => console.error('Orders sync error:', error)
+    )
+  );
+}
+
+// ==========================================================================
+// Orders management
+// ==========================================================================
+const ORDER_STATUS_META = {
+  new: { label: 'جديد', className: 'st-new' },
+  preparing: { label: 'قيد التحضير', className: 'st-preparing' },
+  done: { label: 'مكتمل', className: 'st-done' },
+  cancelled: { label: 'ملغي', className: 'st-cancelled' }
+};
+
+function formatOrderTime(createdAt) {
+  const date = createdAt?.toDate ? createdAt.toDate() : null;
+  if (!date) return 'الآن';
+  const time = date.toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
+  const isToday = new Date().toDateString() === date.toDateString();
+  return isToday ? time : `${date.toLocaleDateString('ar')} ${time}`;
+}
+
+function updateOrdersBadge() {
+  if (!elements.ordersBadge) return;
+  const newCount = state.orders.filter((order) => order.status === 'new').length;
+  elements.ordersBadge.textContent = String(newCount);
+  elements.ordersBadge.classList.toggle('hidden', newCount === 0);
+}
+
+function renderOrders() {
+  if (!elements.ordersList) return;
+  bindOrdersActions();
+
+  const filter = elements.ordersFilter?.value || 'all';
+  const visible = state.orders.filter((order) => filter === 'all' || order.status === filter);
+
+  if (!visible.length) {
+    elements.ordersList.innerHTML =
+      '<div class="orders-empty"><i class="fa-solid fa-bell-concierge"></i><p>' +
+      (state.orders.length ? 'لا توجد طلبات بهذه الحالة.' : 'لا توجد طلبات بعد — أول طلب من الزبائن رح يظهر هنا لحظياً.') +
+      '</p></div>';
+    return;
+  }
+
+  const canDelete =
+    state.currentRole === 'super_admin' ||
+    state.currentRole === 'restaurant_admin' ||
+    state.currentRole === 'admin';
+
+  elements.ordersList.innerHTML = visible.map((order) => {
+    const meta = ORDER_STATUS_META[order.status] || ORDER_STATUS_META.new;
+    const itemsHtml = (order.items || [])
+      .map((line) => `<li><span class="oi-qty">${Number(line.quantity) || 1}×</span> ${escapeHtml(line.name || '')} <span class="oi-price">${Number(line.price || 0).toFixed(2)}</span></li>`)
+      .join('');
+    const noteHtml = order.note
+      ? `<p class="order-note"><i class="fa-solid fa-comment-dots" aria-hidden="true"></i> ${escapeHtml(order.note)}</p>`
+      : '';
+
+    let actionsHtml = '';
+    if (order.status === 'new') {
+      actionsHtml =
+        '<button type="button" class="btn-admin-primary" data-action="set-status" data-status="preparing"><i class="fa-solid fa-fire-burner"></i><span>بدء التحضير</span></button>' +
+        '<button type="button" class="btn-admin-danger" data-action="set-status" data-status="cancelled"><i class="fa-solid fa-ban"></i><span>إلغاء</span></button>';
+    } else if (order.status === 'preparing') {
+      actionsHtml =
+        '<button type="button" class="btn-admin-primary" data-action="set-status" data-status="done"><i class="fa-solid fa-circle-check"></i><span>تم التجهيز</span></button>' +
+        '<button type="button" class="btn-admin-danger" data-action="set-status" data-status="cancelled"><i class="fa-solid fa-ban"></i><span>إلغاء</span></button>';
+    } else if (canDelete) {
+      actionsHtml =
+        '<button type="button" class="btn-admin-secondary" data-action="delete"><i class="fa-solid fa-trash"></i><span>حذف</span></button>';
+    }
+
+    return `
+      <article class="order-card ${meta.className}" data-order-id="${escapeHtml(order.id)}">
+        <div class="order-card-head">
+          <div class="order-meta">
+            <span class="order-time"><i class="fa-regular fa-clock" aria-hidden="true"></i> ${formatOrderTime(order.createdAt)}</span>
+            <span class="order-status-chip ${meta.className}">${meta.label}</span>
+          </div>
+          <span class="order-total">${Number(order.total || 0).toFixed(2)}</span>
+        </div>
+        <p class="order-customer">
+          <i class="fa-solid fa-circle-user" aria-hidden="true"></i>
+          <strong>${escapeHtml(order.customerName || 'زبون')}</strong>
+          <a class="order-phone" href="tel:${escapeAttr(order.customerPhone || '')}" dir="ltr">${escapeHtml(order.customerPhone || '')}</a>
+        </p>
+        <ul class="order-items">${itemsHtml}</ul>
+        ${noteHtml}
+        <div class="order-actions">${actionsHtml}</div>
+      </article>`;
+  }).join('');
+}
+
+function bindOrdersActions() {
+  const list = elements.ordersList;
+  if (!list || list.dataset.delegated === '1') return;
+  list.dataset.delegated = '1';
+  list.addEventListener('click', async (event) => {
+    const btn = event.target.closest('button[data-action]');
+    if (!btn || !list.contains(btn)) return;
+    const orderId = btn.closest('.order-card')?.dataset.orderId;
+    if (!orderId) return;
+
+    if (btn.dataset.action === 'set-status') {
+      const status = btn.dataset.status;
+      try {
+        assertAuthenticated();
+        await updateDoc(doc(db, 'restaurants', state.restaurantId, 'orders', orderId), { status });
+        showToast(status === 'cancelled' ? 'تم إلغاء الطلب.' : status === 'done' ? 'تم إنهاء الطلب بنجاح.' : 'الطلب قيد التحضير الآن.', 'success');
+      } catch (error) {
+        console.error('Order status update failed:', error);
+        showToast(getFirestoreErrorMessage(error), 'error');
+      }
+    } else if (btn.dataset.action === 'delete') {
+      openConfirmModal('حذف الطلب؟', 'سيتم حذف سجل هذا الطلب نهائياً.', async () => {
+        try {
+          assertAuthenticated();
+          await deleteDoc(doc(db, 'restaurants', state.restaurantId, 'orders', orderId));
+          showToast('تم حذف الطلب.', 'success');
+        } catch (error) {
+          console.error('Order delete failed:', error);
+          showToast(getFirestoreErrorMessage(error), 'error');
+        }
+      });
+    }
+  });
+}
+
+// Soft two-tone chime for incoming orders (WebAudio, no asset needed)
+function playOrderChime() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [[880, 0], [1174.66, 0.16]].forEach(([freq, delay]) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + delay + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + delay + 0.5);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + 0.55);
+    });
+  } catch (error) {
+    /* audio unavailable — silent fallback */
+  }
 }
 
 function applyTheme() {
+  // The warm palette lives entirely in admin.css (.admin-light overrides).
+  // Never force colors inline — that used to override the design system.
   document.body.classList.toggle('admin-light', !state.darkMode);
-  document.documentElement.style.setProperty('--admin-bg', state.darkMode ? '#060606' : '#f5efe2');
-  document.documentElement.style.setProperty('--admin-surface', state.darkMode ? '#111111' : '#fffaf2');
-  document.documentElement.style.setProperty('--admin-surface-2', state.darkMode ? '#171717' : '#f2e7cf');
-  document.documentElement.style.setProperty('--admin-text', state.darkMode ? '#f7f2e8' : '#16110b');
-  document.documentElement.style.setProperty('--admin-muted', state.darkMode ? '#a7a7a7' : '#654f33');
-  document.documentElement.style.setProperty('--admin-gold', state.darkMode ? '#d4af37' : '#9c6f13');
 }
 
 function openConfirmModal(title, message, callback) {

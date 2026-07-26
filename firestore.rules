@@ -116,6 +116,40 @@ service cloud.firestore {
       match /backups/{backupId} {
         allow read, write: if isRestaurantAdmin(restaurantId);
       }
+
+      // ---- Customer orders --------------------------------------------------
+      // Anonymous customers may CREATE a tightly-validated order document.
+      // Only restaurant staff can read, update (status changes), or delete.
+      match /orders/{orderId} {
+        allow read: if isRestaurantStaff(restaurantId);
+
+        allow create: if
+          request.resource.data.keys().hasOnly(
+            ['items', 'total', 'customerName', 'customerPhone', 'note', 'status', 'createdAt']
+          ) &&
+          request.resource.data.status == 'new' &&
+          request.resource.data.items is list &&
+          request.resource.data.items.size() >= 1 &&
+          request.resource.data.items.size() <= 50 &&
+          request.resource.data.total is number &&
+          request.resource.data.total >= 0 &&
+          request.resource.data.total <= 100000 &&
+          request.resource.data.customerName is string &&
+          request.resource.data.customerName.size() >= 1 &&
+          request.resource.data.customerName.size() <= 80 &&
+          request.resource.data.customerPhone is string &&
+          request.resource.data.customerPhone.size() >= 8 &&
+          request.resource.data.customerPhone.size() <= 30 &&
+          request.resource.data.note is string &&
+          request.resource.data.note.size() <= 300 &&
+          request.resource.data.createdAt == request.time;
+
+        allow update: if isRestaurantStaff(restaurantId) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) &&
+          request.resource.data.status in ['new', 'preparing', 'done', 'cancelled'];
+
+        allow delete: if isRestaurantAdmin(restaurantId);
+      }
     }
   }
 }

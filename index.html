@@ -189,9 +189,26 @@
                     <i class="fa-solid fa-basket-shopping cart-empty-icon"></i>
                     <p data-translate="cartEmpty">سلة طلبك فارغة حالياً. أضف أطباقاً شهية من القائمة!</p>
                 </div>
+
+                <!-- Order submitted successfully -->
+                <div id="order-success" class="order-success hidden">
+                    <span class="order-success-icon"><i class="fa-solid fa-circle-check"></i></span>
+                    <h3>تم استلام طلبك! 🎉</h3>
+                    <p>وصل طلبك للمطعم مباشرة وسيتم تجهيزه بأقرب وقت. سنتواصل معك على رقمك عند الحاجة.</p>
+                </div>
             </div>
 
             <div class="cart-footer">
+                <!-- Customer details -->
+                <div class="order-form">
+                    <div class="order-form-row">
+                        <input type="text" id="order-name" class="order-input" placeholder="الاسم *" autocomplete="name" maxlength="80">
+                        <input type="tel" id="order-phone" class="order-input" placeholder="رقم الهاتف *" autocomplete="tel" dir="ltr" maxlength="30">
+                    </div>
+                    <input type="text" id="order-note" class="order-input" placeholder="ملاحظات إضافية (اختياري)" maxlength="300">
+                    <p id="order-form-error" class="order-form-error hidden" role="alert"></p>
+                </div>
+
                 <div class="cart-summary">
                     <div class="cart-total-row">
                         <span data-translate="cartTotal">المجموع الإجمالي</span>
@@ -199,8 +216,8 @@
                     </div>
                 </div>
                 <button id="whatsapp-checkout" class="btn-whatsapp-checkout">
-                    <i class="fa-brands fa-whatsapp"></i>
-                    <span data-translate="sendWhatsAppOrder">إرسال الطلب عبر الواتساب</span>
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span data-translate="sendWhatsAppOrder">تأكيد الطلب</span>
                 </button>
             </div>
         </div>
