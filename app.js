@@ -192,7 +192,7 @@ const translations = {
 // ==========================================================================
 // 3. Dynamic State Variables
 // ==========================================================================
-let currentLanguage = "en";
+let currentLanguage = "ar"; // Arabic-only experience
 let currentCategory = "all";
 let searchQuery = "";
 let cart = [];
@@ -259,13 +259,8 @@ document.addEventListener("DOMContentLoaded", () => {
         activeRestaurantId = rParam.toLowerCase().trim();
     }
 
-    const savedLanguage = localStorage.getItem("tasteMenuLang");
-    if (savedLanguage && (savedLanguage === "en" || savedLanguage === "ar")) {
-        currentLanguage = savedLanguage;
-    } else {
-        const browserLang = navigator.language.substring(0, 2);
-        currentLanguage = browserLang === "ar" ? "ar" : "en";
-    }
+    // Arabic-only: no language detection or persistence needed
+    currentLanguage = "ar";
 
     loadCartFromStorage();
     initTheme();
@@ -645,13 +640,6 @@ function applyLanguage(lang) {
     // Header title
     document.title = restaurantConfig.name[lang] || restaurantConfig.name.en;
 
-    // Toggle button globe label
-    const langTextEl = langToggle.querySelector(".lang-text");
-    if (langTextEl) {
-        langTextEl.textContent = lang === "en" ? "العربية" : "English";
-    }
-    langToggle.setAttribute("data-tooltip", lang === "en" ? "التحويل للعربية" : "Switch to English");
-
     // Dynamic brand text
     const brandNameEl = document.getElementById("nav-brand-name");
     const logoImgEl = document.getElementById("nav-logo-img");
@@ -731,10 +719,6 @@ function updateCategoryTitleText() {
 }
 
 // Toggle language hook
-function toggleLanguage() {
-    const nextLang = currentLanguage === "en" ? "ar" : "en";
-    applyLanguage(nextLang);
-}
 
 // ==========================================================================
 // 8. Category Filter Modal
@@ -1276,11 +1260,6 @@ function setupEventListeners() {
         toggleTheme();
     });
 
-    langToggle.addEventListener("click", (event) => {
-        triggerButtonPressEffect(event.currentTarget);
-        toggleLanguage();
-    });
-
     filterToggle?.addEventListener("click", (event) => {
         triggerButtonPressEffect(event.currentTarget);
         if (filterModal?.classList.contains("active")) {
@@ -1369,11 +1348,8 @@ function setupEventListeners() {
         if (cart.length > 0) {
             openCartDrawer();
         } else {
-            const lang = currentLanguage;
-            const phone = restaurantConfig.whatsappNumber || translations[lang].whatsappNumber;
-            const greetText = lang === "en" ? 
-                `Hello! I am browsing your digital menu. Can you help me?` : 
-                `مرحباً! أتصفح قائمتكم الرقمية حالياً، هل يمكنك مساعدتي؟`;
+            const phone = restaurantConfig.whatsappNumber || translations[currentLanguage].whatsappNumber;
+            const greetText = `مرحباً! أتصفح قائمتكم الرقمية حالياً، هل يمكنك مساعدتي؟`;
             window.open(`https://wa.me/${phone.replace(/\+/g, '')}?text=${encodeURIComponent(greetText)}`, "_blank");
         }
     });
