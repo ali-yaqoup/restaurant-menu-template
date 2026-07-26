@@ -392,6 +392,50 @@ function showLoginNotice(message) {
   elements.loginError.classList.add('success');
 }
 
+// Non-blocking toast notification (replaces blocking alert()).
+// type: 'success' | 'error' | 'warning' | 'info'
+function showToast(message, type = 'info') {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'toast-container';
+    container.setAttribute('aria-live', 'polite');
+    container.setAttribute('aria-atomic', 'true');
+    document.body.appendChild(container);
+  }
+
+  const icons = {
+    success: 'fa-circle-check',
+    error: 'fa-circle-exclamation',
+    warning: 'fa-triangle-exclamation',
+    info: 'fa-circle-info'
+  };
+
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+  toast.innerHTML =
+    `<i class="fa-solid ${icons[type] || icons.info}" aria-hidden="true"></i>` +
+    `<span class="toast-msg"></span>` +
+    `<button type="button" class="toast-close" aria-label="Dismiss"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>`;
+  // textContent keeps DB/error strings inert (no HTML injection)
+  toast.querySelector('.toast-msg').textContent = message;
+
+  let removed = false;
+  const remove = () => {
+    if (removed) return;
+    removed = true;
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  };
+
+  toast.querySelector('.toast-close').addEventListener('click', remove);
+  container.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('show'));
+  setTimeout(remove, type === 'error' ? 6000 : 3500);
+}
+
 function setLoginLoading(isLoading) {
   const submitBtn = elements.loginForm.querySelector('button[type="submit"]');
   if (!submitBtn) return;
@@ -979,7 +1023,7 @@ function renderQrCode() {
 async function handleSettingsSave(event) {
   event.preventDefault();
   if (state.currentRole === 'staff_editor') {
-    alert('Staff editors cannot change restaurant settings.');
+    showToast('Staff editors cannot change restaurant settings.', 'warning');
     return;
   }
   const config = state.restaurantConfig;
@@ -1016,7 +1060,7 @@ async function handleSettingsSave(event) {
   config.darkMode = state.darkMode;
   const logoUrl = sanitizeInput(elements.settingsLogoUrl.value);
   if (isDataUrl(logoUrl)) {
-    alert('Logo must be a hosted URL (Cloudinary), not a base64 data URL.');
+    showToast('Logo must be a hosted URL (Cloudinary), not a base64 data URL.', 'error');
     return;
   }
   config.logoUrl = logoUrl;
@@ -1029,10 +1073,10 @@ async function handleSettingsSave(event) {
   try {
     assertAuthenticated();
     await saveRestaurantToFirestore();
-    alert('Restaurant settings saved.');
+    showToast('Restaurant settings saved.', 'success');
   } catch (error) {
     console.error('Restaurant settings save failed:', error);
-    alert(getFirestoreErrorMessage(error));
+    showToast(getFirestoreErrorMessage(error), 'error');
   }
 }
 
@@ -1043,7 +1087,7 @@ async function handleItemSave(event) {
     state.currentRole === 'restaurant_admin' ||
     state.currentRole === 'admin';
   if (!canManage) {
-    alert('Only admins can edit menu items.');
+    showToast('Only admins can edit menu items.', 'warning');
     return;
   }
 
@@ -1093,10 +1137,10 @@ async function handleItemSave(event) {
     assertAuthenticated();
     await saveMenuDataToFirestore();
     closeItemModal();
-    alert('Menu item saved.');
+    showToast('Menu item saved.', 'success');
   } catch (error) {
     console.error('Menu item save failed:', error);
-    alert(getFirestoreErrorMessage(error));
+    showToast(getFirestoreErrorMessage(error), 'error');
   }
 }
 
@@ -1107,7 +1151,7 @@ async function handleCategorySave(event) {
     state.currentRole === 'restaurant_admin' ||
     state.currentRole === 'admin';
   if (!canManage) {
-    alert('Only admins can edit categories.');
+    showToast('Only admins can edit categories.', 'warning');
     return;
   }
   const categoryId = sanitizeSlug(elements.categoryIdVal.value);
@@ -1135,10 +1179,10 @@ async function handleCategorySave(event) {
     assertAuthenticated();
     await saveMenuDataToFirestore();
     closeCategoryModal();
-    alert('Category saved.');
+    showToast('Category saved.', 'success');
   } catch (error) {
     console.error('Category save failed:', error);
-    alert(getFirestoreErrorMessage(error));
+    showToast(getFirestoreErrorMessage(error), 'error');
   }
 }
 
@@ -1207,7 +1251,7 @@ function deleteCategory(categoryId) {
     state.currentRole === 'restaurant_admin' ||
     state.currentRole === 'admin';
   if (!canManage) {
-    alert('Only admins can delete categories.');
+    showToast('Only admins can delete categories.', 'warning');
     return;
   }
   openConfirmModal('Delete category?', 'This will remove the category and any linked items.', async () => {
@@ -1228,7 +1272,7 @@ function deleteCategory(categoryId) {
       await saveMenuDataToFirestore();
     } catch (error) {
       console.error('Category delete failed:', error);
-      alert(getFirestoreErrorMessage(error));
+      showToast(getFirestoreErrorMessage(error), 'error');
     }
   });
 }
@@ -1239,7 +1283,7 @@ function deleteItem(itemId) {
     state.currentRole === 'restaurant_admin' ||
     state.currentRole === 'admin';
   if (!canManage) {
-    alert('Only admins can delete menu items.');
+    showToast('Only admins can delete menu items.', 'warning');
     return;
   }
   openConfirmModal('Delete item?', 'This action permanently removes the item from the menu.', async () => {
@@ -1252,7 +1296,7 @@ function deleteItem(itemId) {
       await saveMenuDataToFirestore();
     } catch (error) {
       console.error('Item delete failed:', error);
-      alert(getFirestoreErrorMessage(error));
+      showToast(getFirestoreErrorMessage(error), 'error');
     }
   });
 }
@@ -1271,7 +1315,7 @@ async function toggleItemAvailability(itemId) {
     renderTables();
     renderOverview();
     console.error('Availability toggle failed:', error);
-    alert(getFirestoreErrorMessage(error));
+    showToast(getFirestoreErrorMessage(error), 'error');
   }
 }
 
@@ -1360,9 +1404,9 @@ function importMenuJson(event) {
       if (auth?.currentUser) {
         await saveMenuDataToFirestore();
       }
-      alert('Menu import complete.');
+      showToast('Menu import complete.', 'success');
     } catch (error) {
-      alert('The selected file is not a valid menu JSON export.');
+      showToast('The selected file is not a valid menu JSON export.', 'error');
     }
   };
   reader.readAsText(file);
@@ -1380,10 +1424,10 @@ async function createLiveBackup() {
       timestamp: new Date().toISOString(),
       createdAt: serverTimestamp()
     });
-    alert('Backup saved to Firestore.');
+    showToast('Backup saved to Firestore.', 'success');
   } catch (error) {
     console.error('Backup failed:', error);
-    alert(getFirestoreErrorMessage(error));
+    showToast(getFirestoreErrorMessage(error), 'error');
   }
 }
 
@@ -1467,13 +1511,13 @@ function syncFromFirestore() {
             await seedFirestoreIfEmpty();
           } catch (error) {
             console.error('Failed to seed Firestore:', error);
-            alert(getFirestoreErrorMessage(error));
+            showToast(getFirestoreErrorMessage(error), 'error');
           }
         }
       },
       (error) => {
         console.error('Restaurant sync error:', error);
-        alert(getFirestoreErrorMessage(error));
+        showToast(getFirestoreErrorMessage(error), 'error');
       }
     )
   );

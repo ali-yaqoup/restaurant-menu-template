@@ -175,11 +175,11 @@
     <!-- Floating Shopping Cart Drawer -->
     <div id="cart-drawer" class="cart-drawer">
         <div class="cart-overlay"></div>
-        <div class="cart-content">
+        <div class="cart-content" role="dialog" aria-modal="true" aria-labelledby="cart-drawer-title">
             <div class="cart-header">
                 <div class="cart-header-title">
                     <i class="fa-solid fa-receipt gold-text"></i>
-                    <h3 data-translate="cartTitle">Your Order</h3>
+                    <h3 id="cart-drawer-title" data-translate="cartTitle">Your Order</h3>
                 </div>
                 <button id="cart-close" class="btn-icon" aria-label="Close Cart">
                     <i class="fa-solid fa-xmark"></i>
