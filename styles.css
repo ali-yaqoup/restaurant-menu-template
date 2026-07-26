@@ -1235,16 +1235,23 @@ body:lang(ar) .card-description {
 }
 
 .btn-primary {
-    background: var(--whatsapp-gradient);
-    color: #ffffff;
-    border-color: rgba(255, 255, 255, 0.18);
-    box-shadow: 0 4px 14px rgba(37, 211, 102, 0.22);
+    background: var(--gold-gradient);
+    color: var(--text-on-gold);
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 4px 14px rgba(212, 175, 55, 0.22);
 }
 
 .btn-primary:not(:disabled):hover {
-    background: linear-gradient(160deg, #31E077 0%, #1FB458 100%);
-    border-color: rgba(255, 255, 255, 0.28);
-    box-shadow: 0 8px 20px rgba(37, 211, 102, 0.3);
+    filter: brightness(1.07);
+    border-color: rgba(255, 255, 255, 0.35);
+    box-shadow: 0 8px 20px rgba(212, 175, 55, 0.32);
+}
+
+/* Brief confirmation state after adding to the order */
+.btn.added-feedback {
+    background: var(--whatsapp-gradient) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
 }
 
 .btn-secondary {
@@ -1560,19 +1567,19 @@ body:lang(ar) .cart-header-title h3 {
     gap: 10px;
     padding: 16px;
     border-radius: var(--radius-pill);
-    background: var(--whatsapp-gradient);
-    color: #FFFFFF;
+    background: var(--gold-gradient);
+    color: var(--text-on-gold);
     font-weight: 700;
     font-size: 1rem;
     cursor: pointer;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    transition: box-shadow var(--transition-fast), transform var(--transition-fast), background var(--transition-fast);
-    box-shadow: 0 6px 18px rgba(37, 211, 102, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    transition: box-shadow var(--transition-fast), transform var(--transition-fast), filter var(--transition-fast);
+    box-shadow: 0 6px 18px rgba(212, 175, 55, 0.25);
 }
 
 .btn-whatsapp-checkout:hover {
-    background: linear-gradient(160deg, #31E077 0%, #1FB458 100%);
-    box-shadow: 0 10px 24px rgba(37, 211, 102, 0.32);
+    filter: brightness(1.07);
+    box-shadow: 0 10px 24px rgba(212, 175, 55, 0.34);
     transform: translateY(-1px);
 }
 
@@ -1580,18 +1587,18 @@ body:lang(ar) .cart-header-title h3 {
 .floating-whatsapp-btn {
     position: fixed;
     bottom: 24px;
-    right: 24px;
+    inset-inline-end: 24px;
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    background: var(--whatsapp-gradient);
-    color: #FFFFFF;
+    background: var(--gold-gradient);
+    color: var(--text-on-gold);
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 2rem;
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    box-shadow: 0 8px 24px rgba(37, 211, 102, 0.35), 0 2px 8px rgba(0, 0, 0, 0.25);
+    font-size: 1.6rem;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 24px rgba(212, 175, 55, 0.4), 0 2px 8px rgba(0, 0, 0, 0.25);
     cursor: pointer;
     z-index: 99;
     transition: all var(--transition-normal);
@@ -1600,8 +1607,8 @@ body:lang(ar) .cart-header-title h3 {
 
 .floating-whatsapp-btn:hover {
     transform: scale(1.08) rotate(5deg);
-    background-color: var(--whatsapp-hover);
-    box-shadow: 0 6px 24px rgba(37, 211, 102, 0.5);
+    filter: brightness(1.07);
+    box-shadow: 0 6px 26px rgba(212, 175, 55, 0.55);
 }
 
 .floating-whatsapp-btn .btn-badge {
@@ -1629,7 +1636,7 @@ body:lang(ar) .cart-header-title h3 {
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    background-color: var(--whatsapp-color);
+    background-color: var(--gold);
     opacity: 0.6;
     z-index: -1;
     animation: pulse-ring-animation 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
@@ -2068,10 +2075,10 @@ body:lang(ar) .footer-col h3 {
 
     .floating-whatsapp-btn {
         bottom: max(16px, env(safe-area-inset-bottom));
-        right: max(16px, env(safe-area-inset-right));
+        inset-inline-end: max(16px, env(safe-area-inset-right));
         width: 54px;
         height: 54px;
-        font-size: 1.75rem;
+        font-size: 1.45rem;
     }
 
     .main-footer {
@@ -2189,14 +2196,14 @@ body:lang(ar) .footer-col h3 {
 }
 
 /* Submit button loading spinner */
-.btn-whatsapp-checkout.is-loading { pointer-events: none; opacity: 0.8; }
+.btn-whatsapp-checkout.is-loading { pointer-events: none; opacity: 0.85; }
 .btn-whatsapp-checkout.is-loading i { display: none; }
 .btn-whatsapp-checkout.is-loading::before {
     content: "";
     width: 17px;
     height: 17px;
-    border: 2px solid rgba(255, 255, 255, 0.4);
-    border-top-color: #fff;
+    border: 2px solid rgba(0, 0, 0, 0.22);
+    border-top-color: var(--text-on-gold);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
 }
@@ -2232,4 +2239,15 @@ body:lang(ar) .footer-col h3 {
     line-height: 1.7;
     max-width: 300px;
     margin: 0 auto;
+}
+
+/* Cart badge pop when an item is added */
+.badge-pop {
+    animation: badge-pop 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@keyframes badge-pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.45); }
+    100% { transform: scale(1); }
 }

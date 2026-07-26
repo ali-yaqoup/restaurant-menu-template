@@ -1170,30 +1170,30 @@ function loadCartFromStorage() {
 // ==========================================================================
 // 12. Quick Direct Single-Item Order
 // ==========================================================================
-window.directWhatsAppOrder = function(itemId, buttonEl) {
-    const item = menuItemsList.find(i => i.id === itemId);
-    if (!item) return;
-
-    triggerButtonPressEffect(buttonEl);
-    
-    const lang = currentLanguage;
-    const phone = restaurantConfig.whatsappNumber || translations[lang].whatsappNumber;
-    const currencySymbol = restaurantConfig.currency[lang] || restaurantConfig.currency.en || translations[lang].currency;
-    
-    // Log item ordered click
-    triggerItemOrderClickTracker(itemId);
-    triggerWhatsAppClicksTracker();
-
-    let text = translations[lang].singleOrderText
-        .replace("{item}", item.name[lang] || item.name.en)
-        .replace("{price}", Number(item.price).toFixed(2))
-        .replace("{currency}", currencySymbol);
-        
-    const waUrl = `https://wa.me/${phone.replace(/\+/g, '')}?text=${encodeURIComponent(text)}`;
-    window.open(waUrl, "_blank");
-};
 
 // Checkout entire cart
+// Brief "added ✓" confirmation on the card button + badge pop
+function flashAddedFeedback(btn) {
+    if (btn.dataset.flashing === "1") return;
+    btn.dataset.flashing = "1";
+    const original = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-circle-check" aria-hidden="true"></i><span>أُضيفت لطلبك</span>';
+    btn.classList.add("added-feedback");
+
+    [document.getElementById("cart-count"), document.getElementById("floating-cart-badge")].forEach((badge) => {
+        if (!badge) return;
+        badge.classList.remove("badge-pop");
+        void badge.offsetWidth; // restart animation
+        badge.classList.add("badge-pop");
+    });
+
+    setTimeout(() => {
+        btn.innerHTML = original;
+        btn.classList.remove("added-feedback");
+        delete btn.dataset.flashing;
+    }, 1300);
+}
+
 // ==========================================================================
 // 12a. Cart drawer open/close (module scope so card buttons can open it)
 // ==========================================================================
@@ -1375,6 +1375,7 @@ function setupEventListeners() {
             openCartDrawer();
         } else if (btn.dataset.action === "add") {
             window.addToCart(id, btn);
+            flashAddedFeedback(btn);
         }
     });
 
@@ -1399,16 +1400,10 @@ function setupEventListeners() {
     });
     document.querySelector(".cart-overlay").addEventListener("click", closeCartDrawer);
 
-    // Floating Button action
+    // Floating order button — always opens the cart drawer
     floatingWhatsappBtn.addEventListener("click", (event) => {
         triggerButtonPressEffect(event.currentTarget);
-        if (cart.length > 0) {
-            openCartDrawer();
-        } else {
-            const phone = restaurantConfig.whatsappNumber || translations[currentLanguage].whatsappNumber;
-            const greetText = `مرحباً! أتصفح قائمتكم الرقمية حالياً، هل يمكنك مساعدتي؟`;
-            window.open(`https://wa.me/${phone.replace(/\+/g, '')}?text=${encodeURIComponent(greetText)}`, "_blank");
-        }
+        openCartDrawer();
     });
 
     whatsappCheckoutBtn.addEventListener("click", (event) => {
