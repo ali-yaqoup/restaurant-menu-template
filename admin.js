@@ -300,6 +300,23 @@ function bindEvents() {
   elements.importJsonInput.addEventListener('change', importMenuJson);
   elements.btnBackup.addEventListener('click', createLiveBackup);
   elements.confirmCancelBtn.addEventListener('click', closeConfirmModal);
+
+  // Close any open modal with Escape, or by clicking its dark overlay
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    if (elements.confirmModal?.classList.contains('active')) { closeConfirmModal(); return; }
+    if (document.getElementById('modal-item')?.classList.contains('active')) { closeItemModal(); return; }
+    if (document.getElementById('modal-category')?.classList.contains('active')) { closeCategoryModal(); }
+  });
+  [
+    [document.getElementById('modal-item'), closeItemModal],
+    [document.getElementById('modal-category'), closeCategoryModal],
+    [elements.confirmModal, closeConfirmModal]
+  ].forEach(([overlay, close]) => {
+    overlay?.addEventListener('click', (event) => {
+      if (event.target === overlay) close();
+    });
+  });
   elements.confirmActionBtn.addEventListener('click', runConfirmAction);
   elements.sidebarToggle.addEventListener('click', toggleSidebar);
   elements.sidebarClose.addEventListener('click', toggleSidebar);
@@ -927,6 +944,10 @@ function renderTables() {
 function renderCategoriesTable() {
   bindCategoriesTableActions();
   elements.categoriesTableBody.innerHTML = '';
+  if (!state.categories.length) {
+    elements.categoriesTableBody.innerHTML = '<tr class="empty-row"><td colspan="4">لا توجد تصنيفات بعد — اضغط "إضافة تصنيف" للبدء.</td></tr>';
+    return;
+  }
   state.categories
     .slice()
     .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
@@ -956,6 +977,10 @@ function renderItemsTable() {
   const filter = elements.itemsCategoryFilter.value;
   elements.itemsTableBody.innerHTML = '';
   const filteredItems = state.menuItems.filter((item) => filter === 'all' || item.categoryId === filter);
+  if (!filteredItems.length) {
+    elements.itemsTableBody.innerHTML = '<tr class="empty-row"><td colspan="7">لا توجد أصناف هنا بعد — اضغط "إضافة صنف" للبدء.</td></tr>';
+    return;
+  }
   filteredItems
     .slice()
     .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
@@ -998,11 +1023,15 @@ function renderOverview() {
 
   const sortedItems = state.menuItems.slice().sort((a, b) => (b.orderClicks || 0) - (a.orderClicks || 0));
   elements.popularItemsList.innerHTML = '';
+  if (!sortedItems.length) {
+    elements.popularItemsList.innerHTML = '<tr class="empty-row"><td colspan="5">لا توجد بيانات بعد — ستظهر الإحصائيات فور تفاعل الزبائن مع المنيو.</td></tr>';
+    return;
+  }
   sortedItems.slice(0, 5).forEach((item) => {
     const category = state.categories.find((entry) => entry.id === item.categoryId);
     const row = document.createElement('tr');
     row.innerHTML = `
-      <td>${escapeHtml(item.name?.en || '')}</td>
+      <td>${escapeHtml(item.name?.ar || item.name?.en || '')}</td>
       <td>${escapeHtml(category?.name?.ar || category?.name?.en || 'بدون تصنيف')}</td>
       <td>${Number(item.price || 0).toFixed(2)}</td>
       <td>${item.orderClicks || 0}</td>
