@@ -219,6 +219,7 @@ const THEME_STORAGE_KEY = "theme";
 // Filter modal DOM (resolved on init)
 let filterToggle = null;
 let filterModal = null;
+let filterFocusTrap = null;
 let filterModalClose = null;
 let filterModalOverlay = null;
 let filterCategoriesList = null;
@@ -483,6 +484,58 @@ function debounce(fn, wait) {
     return function (...args) {
         clearTimeout(timer);
         timer = setTimeout(() => fn.apply(this, args), wait);
+    };
+}
+
+// Add Cloudinary auto-format/auto-quality + width transforms so images ship
+// far smaller on mobile. Non-Cloudinary URLs are returned untouched.
+function optimizedImg(url, width) {
+    if (!url) return "";
+    const marker = "/upload/";
+    const idx = url.indexOf(marker);
+    if (idx !== -1 && /res\.cloudinary\.com/.test(url)) {
+        const after = url.slice(idx + marker.length);
+        // Don't double-insert if a transform (or version) segment is already there
+        if (!/^(f_|q_|w_|c_|e_|dpr_)/.test(after)) {
+            return url.slice(0, idx + marker.length) + `f_auto,q_auto,w_${width}/` + after;
+        }
+    }
+    return url;
+}
+
+// Constrain Tab focus inside a dialog and restore focus to the opener on close.
+function createFocusTrap(container) {
+    const SEL = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const previouslyFocused = document.activeElement;
+
+    function onKeydown(event) {
+        if (event.key !== "Tab") return;
+        const nodes = Array.prototype.slice
+            .call(container.querySelectorAll(SEL))
+            .filter((el) => el.offsetParent !== null);
+        if (!nodes.length) return;
+        const first = nodes[0];
+        const last = nodes[nodes.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        }
+    }
+
+    document.addEventListener("keydown", onKeydown, true);
+    const focusables = container.querySelectorAll(SEL);
+    if (focusables.length) requestAnimationFrame(() => focusables[0].focus());
+
+    return {
+        release() {
+            document.removeEventListener("keydown", onKeydown, true);
+            if (previouslyFocused && typeof previouslyFocused.focus === "function") {
+                previouslyFocused.focus();
+            }
+        }
     };
 }
 
@@ -785,7 +838,11 @@ function openFilterModal() {
     if (!filterModal) return;
 
     renderFilterModal();
-    requestAnimationFrame(() => filterModal.classList.add("active"));
+    requestAnimationFrame(() => {
+        filterModal.classList.add("active");
+        const panel = filterModal.querySelector(".filter-modal-panel") || filterModal;
+        filterFocusTrap = createFocusTrap(panel);
+    });
     filterToggle?.setAttribute("aria-expanded", "true");
     document.body.style.overflow = "hidden";
 }
@@ -795,6 +852,10 @@ function closeFilterModal() {
     filterModal.classList.remove("active");
     filterToggle?.setAttribute("aria-expanded", "false");
     document.body.style.overflow = "";
+    if (filterFocusTrap) {
+        filterFocusTrap.release();
+        filterFocusTrap = null;
+    }
 }
 
 function handleCategorySelect(e) {
@@ -875,13 +936,13 @@ function renderMenuItems() {
         // Add to Cart disables if out of stock
         const actionDisabled = isOutOfStock ? "disabled" : "";
 
-        const safeImg = escapeHtml(item.imageUrl || '');
+        const safeImg = escapeHtml(optimizedImg(item.imageUrl || '', 800));
         const safeName = escapeHtml(item.name[lang] || item.name.en || '');
         const safeDesc = escapeHtml(item.description[lang] || item.description.en || "");
         const safeId = escapeHtml(item.id);
         card.innerHTML = `
             <div class="card-img-container">
-                <img src="${safeImg}" alt="${safeName}" class="menu-card-img skeleton" onload="this.classList.remove('skeleton')">
+                <img src="${safeImg}" alt="${safeName}" class="menu-card-img skeleton" loading="lazy" decoding="async" onload="this.classList.remove('skeleton')">
                 <span class="card-price-badge">${Number(item.price).toFixed(2)} ${currencySymbol}</span>
                 ${stockBadge}
             </div>
@@ -1067,11 +1128,11 @@ function renderCart() {
             const cartItemEl = document.createElement("div");
             cartItemEl.className = "cart-item";
             
-            const safeCartImg = escapeHtml(item.imageUrl || '');
+            const safeCartImg = escapeHtml(optimizedImg(item.imageUrl || '', 200));
             const safeCartName = escapeHtml(item.name[lang] || item.name.en || '');
             const safeCartId = escapeHtml(item.id);
             cartItemEl.innerHTML = `
-                <img src="${safeCartImg}" alt="${safeCartName}" class="cart-item-img">
+                <img src="${safeCartImg}" alt="${safeCartName}" class="cart-item-img" loading="lazy" decoding="async">
                 <div class="cart-item-info">
                     <div>
                         <h4 class="cart-item-title">${safeCartName}</h4>
@@ -1237,8 +1298,11 @@ function setupEventListeners() {
     filterModalOverlay?.addEventListener("click", closeFilterModal);
 
     document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && filterModal?.classList.contains("active")) {
+        if (event.key !== "Escape") return;
+        if (filterModal?.classList.contains("active")) {
             closeFilterModal();
+        } else if (cartDrawer.classList.contains("active")) {
+            closeCartDrawer();
         }
     });
 
@@ -1271,14 +1335,22 @@ function setupEventListeners() {
     });
 
     // Cart Sidebar sliders
+    let cartFocusTrap = null;
+    const cartContent = cartDrawer.querySelector(".cart-content") || cartDrawer;
+
     const openCartDrawer = () => {
         cartDrawer.classList.add("active");
         document.body.style.overflow = "hidden";
+        cartFocusTrap = createFocusTrap(cartContent);
     };
-    
+
     const closeCartDrawer = () => {
         cartDrawer.classList.remove("active");
         document.body.style.overflow = "";
+        if (cartFocusTrap) {
+            cartFocusTrap.release();
+            cartFocusTrap = null;
+        }
     };
 
     cartToggle.addEventListener("click", (event) => {
