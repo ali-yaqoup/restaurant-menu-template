@@ -307,6 +307,7 @@ function bindEvents() {
   elements.btnBackup.addEventListener('click', createLiveBackup);
   elements.confirmCancelBtn.addEventListener('click', closeConfirmModal);
   elements.ordersFilter?.addEventListener('change', renderOrders);
+  document.getElementById('reset-analytics-btn')?.addEventListener('click', handleResetAnalytics);
 
   // Close any open modal with Escape, or by clicking its dark overlay
   document.addEventListener('keydown', (event) => {
@@ -1022,7 +1023,10 @@ function renderItemsTable() {
 function renderOverview() {
   const availableItems = state.menuItems.filter((item) => item.isAvailable !== false).length;
   elements.statViews.textContent = String(state.restaurantConfig.analytics?.views || 0);
-  elements.statOrders.textContent = String(state.restaurantConfig.analytics?.whatsappOrders || 0);
+  // Real order count from the orders collection (cancelled excluded)
+  elements.statOrders.textContent = String(
+    state.orders.filter((order) => order.status !== 'cancelled').length
+  );
   elements.statActiveItems.textContent = String(availableItems);
   const subscription = state.restaurantConfig.subscription?.status || 'trial';
   elements.statSubscription.textContent = subscription === 'active' ? 'فعّال' : subscription === 'expired' ? 'منتهي' : 'تجريبي';
@@ -1621,9 +1625,32 @@ function syncFromFirestore() {
 
         renderOrders();
         updateOrdersBadge();
+        renderOverview();
       },
       (error) => console.error('Orders sync error:', error)
     )
+  );
+}
+
+// Reset the historical counters (views + legacy clicks) to start fresh
+function handleResetAnalytics() {
+  openConfirmModal(
+    'تصفير العدادات؟',
+    'سيتم تصفير عداد المشاهدات والبدء من الصفر. عدد الطلبات لا يتأثر لأنه يُحسب من الطلبات الفعلية.',
+    async () => {
+      try {
+        assertAuthenticated();
+        await updateDoc(doc(db, 'restaurants', state.restaurantId), {
+          'analytics.views': 0,
+          'analytics.whatsappOrders': 0
+        });
+        showToast('تم تصفير العدادات — الأرقام من الآن حقيقية بالكامل.', 'success');
+      } catch (error) {
+        console.error('Analytics reset failed:', error);
+        showToast(getFirestoreErrorMessage(error), 'error');
+      }
+    },
+    'تصفير'
   );
 }
 
@@ -1778,9 +1805,10 @@ function applyTheme() {
   document.body.classList.toggle('admin-light', !state.darkMode);
 }
 
-function openConfirmModal(title, message, callback) {
+function openConfirmModal(title, message, callback, actionLabel = 'حذف') {
   elements.confirmTitle.textContent = title;
   elements.confirmMessage.textContent = message;
+  elements.confirmActionBtn.textContent = actionLabel;
   state.confirmCallback = callback;
   elements.confirmModal.classList.add('active');
 }
