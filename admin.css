@@ -1060,3 +1060,27 @@ input[type="file"].admin-input::file-selector-button {
 @media (max-width: 780px) {
   .orders-list { grid-template-columns: 1fr; }
 }
+
+/* Reset-analytics ghost button on the views stat card */
+.stat-reset-btn {
+  margin-inline-start: auto;
+  align-self: flex-start;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--admin-muted);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 0.85rem;
+  opacity: 0.55;
+  transition: color 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+}
+
+.stat-reset-btn:hover {
+  opacity: 1;
+  color: var(--admin-gold);
+  background: rgba(212, 175, 55, 0.1);
+}
