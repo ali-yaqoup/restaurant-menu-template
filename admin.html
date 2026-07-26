@@ -104,6 +104,11 @@
                     <i class="fa-solid fa-chart-line"></i>
                     <span>نظرة عامة</span>
                 </button>
+                <button class="nav-item" data-tab="tab-orders">
+                    <i class="fa-solid fa-bell-concierge"></i>
+                    <span>الطلبات</span>
+                    <span id="orders-badge" class="orders-badge hidden">0</span>
+                </button>
                 <button class="nav-item" data-tab="tab-categories">
                     <i class="fa-solid fa-folder-tree"></i>
                     <span>التصنيفات</span>
@@ -151,7 +156,7 @@
                     <div class="stat-card">
                         <div class="stat-icon-wrapper"><i class="fa-brands fa-whatsapp"></i></div>
                         <div class="stat-data">
-                            <span class="stat-label">طلبات الواتساب</span>
+                            <span class="stat-label">إجمالي الطلبات</span>
                             <h3 id="stat-total-orders">0</h3>
                         </div>
                     </div>
@@ -221,6 +226,29 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </section>
+
+            <!-- A2. Orders Tab -->
+            <section id="tab-orders" class="tab-content">
+                <div class="panel-header flex-header">
+                    <div>
+                        <h2>الطلبات الواردة</h2>
+                        <p>طلبات الزبائن تصل هنا لحظياً — حدّث حالة كل طلب أثناء التحضير.</p>
+                    </div>
+                    <div class="header-actions">
+                        <select id="orders-status-filter" class="admin-select select-inline" title="تصفية الطلبات حسب الحالة" aria-label="تصفية الطلبات حسب الحالة">
+                            <option value="all">كل الطلبات</option>
+                            <option value="new">جديد</option>
+                            <option value="preparing">قيد التحضير</option>
+                            <option value="done">مكتمل</option>
+                            <option value="cancelled">ملغي</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="orders-list" class="orders-list">
+                    <!-- Populated dynamically via JS -->
                 </div>
             </section>
 

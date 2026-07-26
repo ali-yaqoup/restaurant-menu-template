@@ -886,3 +886,177 @@ input[type="file"].admin-input::file-selector-button {
   .admin-table th, .admin-table td { padding: 11px 9px; font-size: 0.85rem; }
   .stat-data h3 { font-size: 1.35rem; }
 }
+
+/* ==========================================================================
+   Live orders
+   ========================================================================== */
+.orders-badge {
+  margin-inline-start: auto;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--admin-danger);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  display: inline-grid;
+  place-items: center;
+  line-height: 1;
+}
+
+.orders-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+}
+
+.orders-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 70px 20px;
+  color: var(--admin-muted);
+}
+
+.orders-empty i {
+  font-size: 2.4rem;
+  color: var(--admin-gold);
+  opacity: 0.6;
+  margin-bottom: 14px;
+  display: block;
+}
+
+.order-card {
+  background:
+    linear-gradient(180deg, rgba(255, 240, 205, 0.03), transparent 50%),
+    var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 18px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: modal-in 0.25s ease;
+}
+
+.order-card.st-new { border-inline-start: 3px solid var(--admin-gold); }
+.order-card.st-preparing { border-inline-start: 3px solid #38bdf8; }
+.order-card.st-done { border-inline-start: 3px solid var(--admin-success); opacity: 0.85; }
+.order-card.st-cancelled { border-inline-start: 3px solid var(--admin-danger); opacity: 0.65; }
+
+.order-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.order-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.order-time {
+  color: var(--admin-muted);
+  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.order-status-chip {
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+.order-status-chip.st-new { background: rgba(212, 175, 55, 0.15); color: var(--admin-gold); }
+.order-status-chip.st-preparing { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
+.order-status-chip.st-done { background: rgba(34, 197, 94, 0.15); color: var(--admin-success); }
+.order-status-chip.st-cancelled { background: rgba(239, 68, 68, 0.15); color: var(--admin-danger); }
+
+.order-total {
+  font-family: var(--admin-font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--admin-gold);
+  font-variant-numeric: tabular-nums;
+}
+
+.order-customer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 0.92rem;
+  flex-wrap: wrap;
+}
+
+.order-customer i { color: var(--admin-gold); }
+
+.order-phone {
+  color: var(--admin-muted);
+  text-decoration: none;
+  font-size: 0.85rem;
+  border-bottom: 1px dashed var(--admin-hairline);
+}
+.order-phone:hover { color: var(--admin-gold); }
+
+.order-items {
+  list-style: none;
+  margin: 0;
+  padding: 12px 14px;
+  background: var(--admin-surface-2);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.order-items li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+}
+
+.oi-qty {
+  color: var(--admin-gold);
+  font-weight: 800;
+  min-width: 26px;
+}
+
+.oi-price {
+  margin-inline-start: auto;
+  color: var(--admin-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.order-note {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(212, 175, 55, 0.07);
+  border: 1px dashed var(--admin-border);
+  color: var(--admin-muted);
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+.order-note i { color: var(--admin-gold); margin-inline-end: 5px; }
+
+.order-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.order-actions .btn-admin-primary,
+.order-actions .btn-admin-danger,
+.order-actions .btn-admin-secondary {
+  flex: 1;
+  font-size: 0.85rem;
+  padding: 10px 12px;
+}
+
+@media (max-width: 780px) {
+  .orders-list { grid-template-columns: 1fr; }
+}

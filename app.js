@@ -4,14 +4,16 @@
  */
 
 import { db, isFirebaseReady } from "./firebase-config.js?v=3";
-import { 
-    doc, 
-    collection, 
-    onSnapshot, 
-    updateDoc, 
-    increment, 
-    query, 
-    orderBy 
+import {
+    doc,
+    collection,
+    onSnapshot,
+    updateDoc,
+    addDoc,
+    increment,
+    serverTimestamp,
+    query,
+    orderBy
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // ==========================================================================
@@ -168,7 +170,7 @@ const translations = {
         cartTitle: "تفاصيل طلبك",
         cartEmpty: "سلة طلبك فارغة حالياً. أضف أطباقاً شهية من القائمة!",
         cartTotal: "المجموع الإجمالي",
-        sendWhatsAppOrder: "إرسال الطلب عبر الواتساب",
+        sendWhatsAppOrder: "تأكيد الطلب",
         workingHoursTitle: "أوقات العمل",
         daysWeek: "السبت - الجمعة",
         hoursWeek: "12:00 ظهراً - 12:00 ليلاً",
@@ -938,7 +940,7 @@ function renderMenuItems() {
                 <div class="card-tags-row">${tagsHtml}</div>
                 <div class="card-actions">
                     <button type="button" class="btn btn-primary" data-action="order" data-item-id="${safeId}" ${actionDisabled}>
-                        <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+                        <i class="fa-solid fa-bolt" aria-hidden="true"></i>
                         <span>${translations[lang].orderNow}</span>
                     </button>
                     <button type="button" class="btn btn-secondary" data-action="add" data-item-id="${safeId}" ${actionDisabled}>
@@ -1192,61 +1194,130 @@ window.directWhatsAppOrder = function(itemId, buttonEl) {
 };
 
 // Checkout entire cart
-function checkoutCartToWhatsApp() {
-    if (cart.length === 0) return;
-    
-    const lang = currentLanguage;
-    const phone = restaurantConfig.whatsappNumber || translations[lang].whatsappNumber;
-    const currencySymbol = restaurantConfig.currency[lang] || restaurantConfig.currency.en || translations[lang].currency;
-    
-    triggerWhatsAppClicksTracker();
+// ==========================================================================
+// 12a. Cart drawer open/close (module scope so card buttons can open it)
+// ==========================================================================
+let cartFocusTrap = null;
 
-    let text = "";
-    
-    if (lang === "en") {
-        text += `👑 *${restaurantConfig.name.en} - Digital Order*\n`;
-        text += "--------------------------------------\n";
-        text += "Hello, I would like to place the following order:\n\n";
-        
-        let total = 0;
-        cart.forEach(cartItem => {
-            const item = menuItemsList.find(i => i.id === cartItem.id);
-            if (item) {
-                const subtotal = item.price * cartItem.quantity;
-                total += subtotal;
-                triggerItemOrderClickTracker(item.id); // log click for each item in checkout
-                text += `▪️ *${cartItem.quantity} x ${item.name.en}* - (${Number(item.price).toFixed(2)} ${currencySymbol})\n`;
-            }
-        });
-        
-        text += "\n--------------------------------------\n";
-        text += `💰 *Total Amount:* ${total.toFixed(2)} ${currencySymbol}\n`;
-        text += "📍 *Type:* Delivery / Pickup (Please confirm)\n";
-        text += "Please confirm and estimate preparation time. Thanks!";
-    } else {
-        text += `👑 *${restaurantConfig.name.ar || restaurantConfig.name.en} - طلب جديد*\n`;
-        text += "--------------------------------------\n";
-        text += "مرحباً، أود تسجيل طلب المأكولات التالي:\n\n";
-        
-        let total = 0;
-        cart.forEach(cartItem => {
-            const item = menuItemsList.find(i => i.id === cartItem.id);
-            if (item) {
-                const subtotal = item.price * cartItem.quantity;
-                total += subtotal;
-                triggerItemOrderClickTracker(item.id);
-                text += `▪️ *${cartItem.quantity} x ${item.name.ar || item.name.en}* - (${Number(item.price).toFixed(2)} ${currencySymbol})\n`;
-            }
-        });
-        
-        text += "\n--------------------------------------\n";
-        text += `💰 *المجموع الإجمالي:* ${total.toFixed(2)} ${currencySymbol}\n`;
-        text += "📍 *نوع الطلب:* توصيل / استلام (الرجاء التأكيد)\n";
-        text += "يرجى تأكيد الطلب وتحديد الوقت المقدر للتحضير. شكراً لكم!";
+function openCartDrawer() {
+    resetCartSuccessView();
+    cartDrawer.classList.add("active");
+    document.body.style.overflow = "hidden";
+    const cartContent = cartDrawer.querySelector(".cart-content") || cartDrawer;
+    cartFocusTrap = createFocusTrap(cartContent);
+}
+
+function closeCartDrawer() {
+    cartDrawer.classList.remove("active");
+    document.body.style.overflow = "";
+    if (cartFocusTrap) {
+        cartFocusTrap.release();
+        cartFocusTrap = null;
     }
-    
-    const waUrl = `https://wa.me/${phone.replace(/\+/g, '')}?text=${encodeURIComponent(text)}`;
-    window.open(waUrl, "_blank");
+    resetCartSuccessView();
+    renderCart();
+}
+
+// ==========================================================================
+// 12b. In-app order submission (orders land in the admin dashboard)
+// ==========================================================================
+let isSubmittingOrder = false;
+
+function showOrderFieldError(message) {
+    const hint = document.getElementById("order-form-error");
+    if (!hint) return;
+    hint.textContent = message;
+    hint.classList.remove("hidden");
+}
+
+function hideOrderFieldError() {
+    document.getElementById("order-form-error")?.classList.add("hidden");
+}
+
+function resetCartSuccessView() {
+    document.getElementById("order-success")?.classList.add("hidden");
+    document.querySelector(".cart-footer")?.classList.remove("hidden");
+    if (cart.length > 0) {
+        cartItemsContainer?.classList.remove("hidden");
+    }
+}
+
+async function submitOrder() {
+    if (isSubmittingOrder || cart.length === 0) return;
+
+    const nameInput = document.getElementById("order-name");
+    const phoneInput = document.getElementById("order-phone");
+    const noteInput = document.getElementById("order-note");
+    const submitBtn = document.getElementById("whatsapp-checkout");
+
+    const customerName = (nameInput?.value || "").trim();
+    const customerPhone = (phoneInput?.value || "").trim();
+    const note = (noteInput?.value || "").trim();
+
+    if (!customerName) {
+        showOrderFieldError("يرجى كتابة الاسم لإتمام الطلب.");
+        nameInput?.focus();
+        return;
+    }
+    if (customerPhone.length < 8) {
+        showOrderFieldError("يرجى كتابة رقم هاتف صحيح للتواصل.");
+        phoneInput?.focus();
+        return;
+    }
+    hideOrderFieldError();
+
+    const items = [];
+    let total = 0;
+    cart.forEach(cartItem => {
+        const item = menuItemsList.find(i => i.id === cartItem.id);
+        if (!item) return;
+        total += item.price * cartItem.quantity;
+        items.push({
+            id: item.id,
+            name: item.name.ar || item.name.en || item.id,
+            price: Number(item.price) || 0,
+            quantity: cartItem.quantity
+        });
+        triggerItemOrderClickTracker(item.id);
+    });
+    if (!items.length) return;
+
+    isSubmittingOrder = true;
+    submitBtn?.classList.add("is-loading");
+    if (submitBtn) submitBtn.disabled = true;
+
+    try {
+        await addDoc(collection(db, "restaurants", activeRestaurantId, "orders"), {
+            items,
+            total: Number(total.toFixed(2)),
+            customerName: customerName.slice(0, 80),
+            customerPhone: customerPhone.slice(0, 30),
+            note: note.slice(0, 300),
+            status: "new",
+            createdAt: serverTimestamp()
+        });
+
+        triggerWhatsAppClicksTracker(); // total-orders counter
+
+        // Success view
+        cart = [];
+        saveCartToStorage();
+        renderCart();
+        if (nameInput) nameInput.value = "";
+        if (phoneInput) phoneInput.value = "";
+        if (noteInput) noteInput.value = "";
+        cartItemsContainer?.classList.add("hidden");
+        document.getElementById("cart-empty-state")?.classList.add("hidden");
+        document.querySelector(".cart-footer")?.classList.add("hidden");
+        document.getElementById("order-success")?.classList.remove("hidden");
+    } catch (error) {
+        console.error("Order submission failed:", error);
+        showOrderFieldError("تعذّر إرسال الطلب. تحقق من اتصالك وحاول مجدداً.");
+    } finally {
+        isSubmittingOrder = false;
+        submitBtn?.classList.remove("is-loading");
+        if (submitBtn) submitBtn.disabled = false;
+    }
 }
 
 // ==========================================================================
@@ -1298,8 +1369,13 @@ function setupEventListeners() {
         if (!btn || !menuGrid.contains(btn)) return;
         const id = btn.getAttribute("data-item-id");
         if (!id) return;
-        if (btn.dataset.action === "order") window.directWhatsAppOrder(id, btn);
-        else if (btn.dataset.action === "add") window.addToCart(id, btn);
+        if (btn.dataset.action === "order") {
+            // "اطلب الآن": add to the order and jump straight to checkout
+            window.addToCart(id, btn);
+            openCartDrawer();
+        } else if (btn.dataset.action === "add") {
+            window.addToCart(id, btn);
+        }
     });
 
     // Delegated cart-item actions.
@@ -1312,25 +1388,6 @@ function setupEventListeners() {
         else if (btn.dataset.action === "qty-inc") window.changeQuantity(id, 1);
         else if (btn.dataset.action === "remove") window.removeFromCart(id);
     });
-
-    // Cart Sidebar sliders
-    let cartFocusTrap = null;
-    const cartContent = cartDrawer.querySelector(".cart-content") || cartDrawer;
-
-    const openCartDrawer = () => {
-        cartDrawer.classList.add("active");
-        document.body.style.overflow = "hidden";
-        cartFocusTrap = createFocusTrap(cartContent);
-    };
-
-    const closeCartDrawer = () => {
-        cartDrawer.classList.remove("active");
-        document.body.style.overflow = "";
-        if (cartFocusTrap) {
-            cartFocusTrap.release();
-            cartFocusTrap = null;
-        }
-    };
 
     cartToggle.addEventListener("click", (event) => {
         triggerButtonPressEffect(event.currentTarget);
@@ -1356,6 +1413,6 @@ function setupEventListeners() {
 
     whatsappCheckoutBtn.addEventListener("click", (event) => {
         triggerButtonPressEffect(event.currentTarget);
-        checkoutCartToWhatsApp();
+        submitOrder();
     });
 }
