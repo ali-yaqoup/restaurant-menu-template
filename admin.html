@@ -82,7 +82,7 @@
             <button id="sidebar-toggle" class="sidebar-toggle-btn" aria-label="فتح القائمة">
                 <i class="fa-solid fa-bars"></i>
             </button>
-            <div class="mobile-logo-text">Taste Admin</div>
+            <div class="mobile-logo-text">لوحة التحكم</div>
             <div class="mobile-user-status">
                 <i class="fa-solid fa-circle-user"></i>
             </div>
@@ -91,12 +91,12 @@
         <!-- Sidebar Navigation -->
         <aside id="admin-sidebar" class="admin-sidebar">
             <div class="sidebar-brand">
-                <img id="sidebar-logo" src="assets/logo.svg" alt="Brand Logo" class="brand-logo" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=150&q=80'">
+                <img id="sidebar-logo" src="assets/logo.svg" alt="شعار المطعم" class="brand-logo" onerror="this.style.display='none'">
                 <div class="brand-info">
                     <h3 id="sidebar-brand-name">لوحة التحكم</h3>
                     <span id="admin-user-role" class="user-badge">مدير</span>
                 </div>
-                <button id="sidebar-close" class="sidebar-close-btn" title="Close sidebar" aria-label="Close sidebar"><i class="fa-solid fa-xmark"></i></button>
+                <button id="sidebar-close" class="sidebar-close-btn" title="إغلاق القائمة" aria-label="إغلاق القائمة"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
             <nav class="sidebar-nav">
@@ -266,19 +266,18 @@
                         <p>أنشئ الأصناف وعدّلها وكرّرها وبدّل حالة توفرها، واسحب الصفوف لإعادة ترتيبها.</p>
                     </div>
                     <div class="header-actions">
-                       
                         <select id="items-category-filter" class="admin-select select-inline" title="تصفية الأصناف حسب التصنيف" aria-label="تصفية الأصناف حسب التصنيف">
                             <option value="all">كل التصنيفات</option>
                             <!-- Dynamically populated options -->
                         </select>
+                        <button class="btn-admin-primary" onclick="openAddItemModal()">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>إضافة صنف</span>
+                        </button>
                     </div>
                 </div>
 
                 <div class="dashboard-card">
-                     <button class="btn-admin-primary" onclick="openAddItemModal()">
-                            <i class="fa-solid fa-plus" style="margin-right: 2px; "></i>
-                            <span>إضافة صنف</span>
-                        </button>
                     <div class="card-body">
                         <div class="table-responsive">
                             <table class="admin-table">
