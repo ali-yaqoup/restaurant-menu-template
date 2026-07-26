@@ -202,7 +202,7 @@ function init() {
 
   if (!isFirebaseReady) {
     showLogin();
-    showLoginError('Firebase is not configured. Check firebase-config.js.');
+    showLoginError('لم يتم ضبط Firebase. تحقق من ملف firebase-config.js.');
     return;
   }
 
@@ -262,11 +262,11 @@ async function loadUserProfile(user) {
   const restaurantId = profile.restaurantId;
 
   if (!role) {
-    throw new Error('Your user profile is missing a role field.');
+    throw new Error('ملفك الشخصي لا يحتوي حقل role.');
   }
 
   if (!restaurantId) {
-    throw new Error('Your user profile is missing a restaurantId field.');
+    throw new Error('ملفك الشخصي لا يحتوي حقل restaurantId.');
   }
 
   state.currentRole = role;
@@ -326,7 +326,7 @@ function bindEvents() {
   const toolbar = document.createElement('button');
   toolbar.id = 'theme-toggle-btn';
   toolbar.className = 'theme-toggle-btn';
-  toolbar.innerHTML = '<i class="fa-solid fa-moon"></i><span>Toggle theme</span>';
+  toolbar.innerHTML = '<i class="fa-solid fa-moon"></i><span>تبديل الوضع</span>';
   toolbar.addEventListener('click', () => {
     state.darkMode = !state.darkMode;
     applyTheme();
@@ -458,10 +458,10 @@ function showDashboard(user) {
   elements.userEmailDisplay.textContent = user.email || '';
   const roleLabel =
     state.currentRole === 'super_admin'
-      ? 'Super Admin'
+      ? 'مدير عام'
       : state.currentRole === 'restaurant_admin' || state.currentRole === 'admin'
-        ? 'Restaurant Admin'
-        : 'Staff Editor';
+        ? 'مدير المطعم'
+        : 'محرر محتوى';
   elements.adminUserRole.textContent = roleLabel;
 
   populateSettingsForm();
@@ -474,7 +474,7 @@ function showDashboard(user) {
 }
 
 function renderAdminBrand() {
-  elements.sidebarBrandName.textContent = state.restaurantConfig.name?.en || 'Taste Console';
+  elements.sidebarBrandName.textContent = state.restaurantConfig.name?.ar || state.restaurantConfig.name?.en || 'لوحة التحكم';
   elements.sidebarLogo.src = state.restaurantConfig.logoUrl || 'assets/logo.svg';
 }
 
@@ -512,7 +512,7 @@ async function handleLogin(event) {
   event.preventDefault();
 
   if (!isFirebaseReady) {
-    showLoginError('Firebase is not available. Check firebase-config.js.');
+    showLoginError('خدمة Firebase غير متاحة. تحقق من ملف firebase-config.js.');
     return;
   }
 
@@ -535,13 +535,13 @@ async function handleLogin(event) {
 // Send a Firebase password-reset email to the address typed in the email field
 async function handleForgotPassword() {
   if (!isFirebaseReady) {
-    showLoginError('Firebase is not available. Check firebase-config.js.');
+    showLoginError('خدمة Firebase غير متاحة. تحقق من ملف firebase-config.js.');
     return;
   }
 
   const email = document.getElementById('login-email').value.trim();
   if (!email) {
-    showLoginError('Type your email address above first, then click "Forgot password?".');
+    showLoginError('اكتب بريدك الإلكتروني في الحقل أعلاه أولاً، ثم اضغط "نسيت كلمة المرور؟".');
     document.getElementById('login-email').focus();
     return;
   }
@@ -550,7 +550,7 @@ async function handleForgotPassword() {
 
   try {
     await sendPasswordResetEmail(auth, email);
-    showLoginNotice(`Password reset link sent to ${email}. Check your inbox (and spam folder).`);
+    showLoginNotice(`تم إرسال رابط إعادة التعيين إلى ${email}. تفقد بريدك الوارد (ومجلد السبام).`);
   } catch (error) {
     console.error('Password reset failed:', error);
     showLoginError(getAuthErrorMessage(error));
@@ -569,7 +569,7 @@ async function handleLogout() {
 
 function assertAuthenticated() {
   if (!auth?.currentUser) {
-    throw new Error('You must be signed in to perform this action.');
+    throw new Error('يجب تسجيل الدخول لتنفيذ هذا الإجراء.');
   }
 }
 
@@ -760,7 +760,7 @@ async function handleLogoCropConfirm() {
   const originalLabel = cropButton.innerHTML;
   state.isLogoUploading = true;
   updateLogoUploadingUi();
-  cropButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Uploading...</span>';
+  cropButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>جارٍ الرفع...</span>';
   setLogoStatus('Uploading cropped logo to Cloudinary...', 'info');
 
   try {
@@ -771,7 +771,7 @@ async function handleLogoCropConfirm() {
       imageSmoothingQuality: 'high'
     });
     if (!canvas) {
-      throw new Error('Could not crop image.');
+      throw new Error('تعذّر قصّ الصورة.');
     }
 
     const blob = await new Promise((resolve, reject) => {
@@ -783,7 +783,7 @@ async function handleLogoCropConfirm() {
 
     const logoUrl = await uploadToCloudinaryWithRetry(blob);
     if (isDataUrl(logoUrl)) {
-      throw new Error('Invalid Cloudinary response. Expected a hosted URL, got data URI.');
+      throw new Error('استجابة غير صالحة من خدمة الرفع. لم يتم استلام رابط مستضاف.');
     }
     const optimizedLogoUrl = optimizeCloudinaryUrl(logoUrl);
     elements.settingsLogoUrl.value = optimizedLogoUrl;
@@ -834,14 +834,14 @@ async function uploadToCloudinary(blob) {
       body: formData
     });
   } catch (networkError) {
-    throw new Error('Network error while uploading to Cloudinary. Check your connection and try again.');
+    throw new Error('خطأ بالشبكة أثناء رفع الصورة. تحقق من اتصالك وحاول مجدداً.');
   }
 
   let payload = null;
   try {
     payload = await response.json();
   } catch (jsonError) {
-    throw new Error('Cloudinary returned an unreadable response.');
+    throw new Error('تعذّر قراءة استجابة خدمة رفع الصور.');
   }
 
   if (!response.ok || !payload?.secure_url || typeof payload.secure_url !== 'string') {
@@ -872,12 +872,12 @@ function updateItemImagePreview() {
 }
 
 function renderCategoryOptions() {
-  elements.itemCategorySelect.innerHTML = '<option value="">Select a category</option>';
-  elements.itemsCategoryFilter.innerHTML = '<option value="all">Filter by Category: All</option>';
+  elements.itemCategorySelect.innerHTML = '<option value="">اختر تصنيفاً</option>';
+  elements.itemsCategoryFilter.innerHTML = '<option value="all">كل التصنيفات</option>';
   state.categories.forEach((category) => {
     const option = document.createElement('option');
     option.value = category.id;
-    option.textContent = category.name?.en || category.id;
+    option.textContent = category.name?.ar || category.name?.en || category.id;
     elements.itemCategorySelect.appendChild(option.cloneNode(true));
     elements.itemsCategoryFilter.appendChild(option.cloneNode(true));
   });
@@ -935,8 +935,7 @@ function renderCategoriesTable() {
       row.innerHTML = `
         <td><i class="fa-solid fa-grip-lines drag-handle" title="Drag to reorder"></i></td>
         <td>${escapeHtml(category.id)}</td>
-        <td>${escapeHtml(category.name?.en || '')}</td>
-        <td>${escapeHtml(category.name?.ar || '')}</td>
+        <td>${escapeHtml(category.name?.ar || category.name?.en || '')}</td>
         <td>
           <div class="table-actions">
             <button type="button" class="btn-admin-secondary" data-action="edit"><i class="fa-solid fa-pen"></i></button>
@@ -961,16 +960,16 @@ function renderItemsTable() {
     .slice()
     .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
     .forEach((item) => {
-      const categoryName = state.categories.find((category) => category.id === item.categoryId)?.name?.en || 'Uncategorized';
+      const categoryRef = state.categories.find((category) => category.id === item.categoryId);
+      const categoryName = categoryRef?.name?.ar || categoryRef?.name?.en || 'بدون تصنيف';
       const row = document.createElement('tr');
       row.innerHTML = `
         <td><i class="fa-solid fa-grip-lines drag-handle" title="Drag to reorder"></i></td>
         <td>${item.imageUrl ? `<img src="${escapeAttr(item.imageUrl)}" alt="item" class="avatar-preview" />` : '<span class="text-muted">—</span>'}</td>
-        <td>${escapeHtml(item.name?.en || '')}</td>
-        <td>${escapeHtml(item.name?.ar || '')}</td>
+        <td>${escapeHtml(item.name?.ar || item.name?.en || '')}</td>
         <td>${escapeHtml(categoryName)}</td>
         <td>${Number(item.price || 0).toFixed(2)}</td>
-        <td><span class="status-pill ${item.isAvailable === false ? 'out-stock' : 'in-stock'}">${item.isAvailable === false ? 'Out of Stock' : 'In Stock'}</span></td>
+        <td><span class="status-pill ${item.isAvailable === false ? 'out-stock' : 'in-stock'}">${item.isAvailable === false ? 'غير متوفر' : 'متوفر'}</span></td>
         <td>
           <div class="table-actions">
             <button type="button" class="btn-admin-secondary" data-action="edit"><i class="fa-solid fa-pen"></i></button>
@@ -994,7 +993,7 @@ function renderOverview() {
   elements.statOrders.textContent = String(state.restaurantConfig.analytics?.whatsappOrders || 0);
   elements.statActiveItems.textContent = String(availableItems);
   const subscription = state.restaurantConfig.subscription?.status || 'trial';
-  elements.statSubscription.textContent = capitalize(subscription);
+  elements.statSubscription.textContent = subscription === 'active' ? 'فعّال' : subscription === 'expired' ? 'منتهي' : 'تجريبي';
   elements.statSubscription.className = `status-badge-${subscription === 'expired' ? 'expired' : subscription === 'active' ? 'active' : 'trial'}`;
 
   const sortedItems = state.menuItems.slice().sort((a, b) => (b.orderClicks || 0) - (a.orderClicks || 0));
@@ -1004,7 +1003,7 @@ function renderOverview() {
     const row = document.createElement('tr');
     row.innerHTML = `
       <td>${escapeHtml(item.name?.en || '')}</td>
-      <td>${escapeHtml(category?.name?.en || 'Uncategorized')}</td>
+      <td>${escapeHtml(category?.name?.ar || category?.name?.en || 'بدون تصنيف')}</td>
       <td>${Number(item.price || 0).toFixed(2)}</td>
       <td>${item.orderClicks || 0}</td>
       <td>${item.views || 0}</td>`;
@@ -1023,7 +1022,7 @@ function renderQrCode() {
 async function handleSettingsSave(event) {
   event.preventDefault();
   if (state.currentRole === 'staff_editor') {
-    showToast('Staff editors cannot change restaurant settings.', 'warning');
+    showToast('محرر المحتوى لا يملك صلاحية تعديل إعدادات المطعم.', 'warning');
     return;
   }
   const config = state.restaurantConfig;
@@ -1060,7 +1059,7 @@ async function handleSettingsSave(event) {
   config.darkMode = state.darkMode;
   const logoUrl = sanitizeInput(elements.settingsLogoUrl.value);
   if (isDataUrl(logoUrl)) {
-    showToast('Logo must be a hosted URL (Cloudinary), not a base64 data URL.', 'error');
+    showToast('يجب أن يكون الشعار رابطاً مستضافاً وليس صورة base64.', 'error');
     return;
   }
   config.logoUrl = logoUrl;
@@ -1073,7 +1072,7 @@ async function handleSettingsSave(event) {
   try {
     assertAuthenticated();
     await saveRestaurantToFirestore();
-    showToast('Restaurant settings saved.', 'success');
+    showToast('تم حفظ إعدادات المطعم.', 'success');
   } catch (error) {
     console.error('Restaurant settings save failed:', error);
     showToast(getFirestoreErrorMessage(error), 'error');
@@ -1087,7 +1086,7 @@ async function handleItemSave(event) {
     state.currentRole === 'restaurant_admin' ||
     state.currentRole === 'admin';
   if (!canManage) {
-    showToast('Only admins can edit menu items.', 'warning');
+    showToast('تعديل الأصناف متاح للمدراء فقط.', 'warning');
     return;
   }
 
@@ -1137,7 +1136,7 @@ async function handleItemSave(event) {
     assertAuthenticated();
     await saveMenuDataToFirestore();
     closeItemModal();
-    showToast('Menu item saved.', 'success');
+    showToast('تم حفظ الصنف بنجاح.', 'success');
   } catch (error) {
     console.error('Menu item save failed:', error);
     showToast(getFirestoreErrorMessage(error), 'error');
@@ -1151,7 +1150,7 @@ async function handleCategorySave(event) {
     state.currentRole === 'restaurant_admin' ||
     state.currentRole === 'admin';
   if (!canManage) {
-    showToast('Only admins can edit categories.', 'warning');
+    showToast('تعديل التصنيفات متاح للمدراء فقط.', 'warning');
     return;
   }
   const categoryId = sanitizeSlug(elements.categoryIdVal.value);
@@ -1179,7 +1178,7 @@ async function handleCategorySave(event) {
     assertAuthenticated();
     await saveMenuDataToFirestore();
     closeCategoryModal();
-    showToast('Category saved.', 'success');
+    showToast('تم حفظ التصنيف بنجاح.', 'success');
   } catch (error) {
     console.error('Category save failed:', error);
     showToast(getFirestoreErrorMessage(error), 'error');
@@ -1191,7 +1190,7 @@ function openAddCategoryModal() {
   elements.categoryEditId.value = '';
   elements.categoryIdVal.readOnly = false;
   elements.categoryOrderIndex.value = String(state.categories.length);
-  elements.categoryModalTitle.textContent = 'Add Category';
+  elements.categoryModalTitle.textContent = 'إضافة تصنيف';
   document.getElementById('modal-category').classList.add('active');
 }
 
@@ -1203,7 +1202,7 @@ function openAddItemModal() {
   elements.itemForm.reset();
   elements.itemEditId.value = '';
   elements.itemAvailable.checked = true;
-  elements.itemModalTitle.textContent = 'Add Menu Item';
+  elements.itemModalTitle.textContent = 'إضافة صنف جديد';
   elements.imageUrl.value = '';
   updateItemImagePreview();
   document.getElementById('modal-item').classList.add('active');
@@ -1222,7 +1221,7 @@ function editCategory(categoryId) {
   elements.categoryNameEn.value = category.name?.en || '';
   elements.categoryNameAr.value = category.name?.ar || '';
   elements.categoryOrderIndex.value = String(category.orderIndex || 0);
-  elements.categoryModalTitle.textContent = 'Edit Category';
+  elements.categoryModalTitle.textContent = 'تعديل التصنيف';
   document.getElementById('modal-category').classList.add('active');
 }
 
@@ -1241,7 +1240,7 @@ function editItem(itemId) {
   elements.itemTagsAr.value = (item.tags?.ar || []).join(', ');
   elements.imageUrl.value = item.imageUrl || item.image || '';
   updateItemImagePreview();
-  elements.itemModalTitle.textContent = 'Edit Menu Item';
+  elements.itemModalTitle.textContent = 'تعديل الصنف';
   document.getElementById('modal-item').classList.add('active');
 }
 
@@ -1251,10 +1250,10 @@ function deleteCategory(categoryId) {
     state.currentRole === 'restaurant_admin' ||
     state.currentRole === 'admin';
   if (!canManage) {
-    showToast('Only admins can delete categories.', 'warning');
+    showToast('حذف التصنيفات متاح للمدراء فقط.', 'warning');
     return;
   }
-  openConfirmModal('Delete category?', 'This will remove the category and any linked items.', async () => {
+  openConfirmModal('حذف التصنيف؟', 'سيتم حذف التصنيف وجميع الأصناف المرتبطة به.', async () => {
     const removedItems = state.menuItems.filter((item) => item.categoryId === categoryId);
     state.categories = state.categories.filter((entry) => entry.id !== categoryId);
     state.menuItems = state.menuItems.filter((item) => item.categoryId !== categoryId);
@@ -1283,10 +1282,10 @@ function deleteItem(itemId) {
     state.currentRole === 'restaurant_admin' ||
     state.currentRole === 'admin';
   if (!canManage) {
-    showToast('Only admins can delete menu items.', 'warning');
+    showToast('حذف الأصناف متاح للمدراء فقط.', 'warning');
     return;
   }
-  openConfirmModal('Delete item?', 'This action permanently removes the item from the menu.', async () => {
+  openConfirmModal('حذف الصنف؟', 'سيتم حذف هذا الصنف نهائياً من المنيو.', async () => {
     state.menuItems = state.menuItems.filter((item) => item.id !== itemId);
     renderTables();
     renderOverview();
@@ -1404,9 +1403,9 @@ function importMenuJson(event) {
       if (auth?.currentUser) {
         await saveMenuDataToFirestore();
       }
-      showToast('Menu import complete.', 'success');
+      showToast('تم استيراد المنيو بنجاح.', 'success');
     } catch (error) {
-      showToast('The selected file is not a valid menu JSON export.', 'error');
+      showToast('الملف المحدد ليس ملف تصدير منيو صالحاً.', 'error');
     }
   };
   reader.readAsText(file);
@@ -1424,7 +1423,7 @@ async function createLiveBackup() {
       timestamp: new Date().toISOString(),
       createdAt: serverTimestamp()
     });
-    showToast('Backup saved to Firestore.', 'success');
+    showToast('تم حفظ النسخة الاحتياطية في السحابة.', 'success');
   } catch (error) {
     console.error('Backup failed:', error);
     showToast(getFirestoreErrorMessage(error), 'error');

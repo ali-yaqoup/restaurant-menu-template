@@ -1,24 +1,25 @@
 /**
- * Maps Firebase Auth error codes to user-friendly messages.
+ * ترجمة أكواد أخطاء Firebase إلى رسائل عربية واضحة للمستخدم.
  */
 
 const AUTH_ERROR_MESSAGES = {
-    "auth/invalid-email": "Please enter a valid email address.",
-    "auth/user-disabled": "This account has been disabled. Contact your administrator.",
-    "auth/user-not-found": "No account found with this email.",
-    "auth/wrong-password": "Incorrect password. Please try again.",
-    "auth/invalid-credential": "Invalid email or password.",
-    "auth/too-many-requests": "Too many failed attempts. Please wait and try again.",
-    "auth/network-request-failed": "Network error. Check your connection and try again.",
-    "auth/operation-not-allowed": "Email/password sign-in is not enabled in Firebase Console."
+    "auth/invalid-email": "يرجى إدخال بريد إلكتروني صحيح.",
+    "auth/user-disabled": "تم تعطيل هذا الحساب. تواصل مع مدير النظام.",
+    "auth/user-not-found": "لا يوجد حساب مسجّل بهذا البريد الإلكتروني.",
+    "auth/wrong-password": "كلمة المرور غير صحيحة. حاول مجدداً.",
+    "auth/invalid-credential": "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
+    "auth/too-many-requests": "محاولات فاشلة كثيرة. انتظر قليلاً ثم حاول مجدداً.",
+    "auth/network-request-failed": "خطأ بالشبكة. تحقق من اتصالك وحاول مجدداً.",
+    "auth/operation-not-allowed": "تسجيل الدخول بالبريد وكلمة المرور غير مفعّل في Firebase Console.",
+    "auth/missing-email": "يرجى إدخال البريد الإلكتروني أولاً."
 };
 
 export function getAuthErrorMessage(error) {
-    if (!error) return "An unknown error occurred.";
+    if (!error) return "حدث خطأ غير معروف.";
     if (error.code && AUTH_ERROR_MESSAGES[error.code]) {
         return AUTH_ERROR_MESSAGES[error.code];
     }
-    return error.message || "Authentication failed. Please try again.";
+    return error.message || "فشل تسجيل الدخول. حاول مجدداً.";
 }
 
 export function getFirestoreErrorMessage(error) {

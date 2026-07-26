@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Taste Restaurant - Admin Console</title>
+    <title>لوحة تحكم المطعم</title>
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@300;400;600;700&family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Almarai:wght@300;400;700;800&display=swap" rel="stylesheet">
 
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -33,43 +33,43 @@
                     <i class="fa-solid fa-utensils" aria-hidden="true"></i>
                     <img src="assets/logo.svg" alt="" class="login-logo" onerror="this.style.display='none'">
                 </div>
-                <h2>Admin Console</h2>
-                <p>Taste Restaurant Management Portal</p>
+                <h2>لوحة التحكم</h2>
+                <p>بوابة إدارة المطعم</p>
             </div>
 
             <form id="login-form">
                 <div class="form-group">
-                    <label for="login-email">Email Address</label>
+                    <label for="login-email">البريد الإلكتروني</label>
                     <div class="input-wrapper">
                         <i class="fa-solid fa-envelope" aria-hidden="true"></i>
-                        <input type="email" id="login-email" placeholder="admin@restaurant.com" autocomplete="email" required>
+                        <input type="email" id="login-email" placeholder="admin@restaurant.com" autocomplete="email" dir="ltr" required>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="login-password">Password</label>
+                    <label for="login-password">كلمة المرور</label>
                     <div class="input-wrapper">
                         <i class="fa-solid fa-lock" aria-hidden="true"></i>
                         <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" required>
-                        <button type="button" id="password-toggle" class="password-toggle" aria-label="Show password">
+                        <button type="button" id="password-toggle" class="password-toggle" aria-label="إظهار كلمة المرور">
                             <i class="fa-solid fa-eye" aria-hidden="true"></i>
                         </button>
                     </div>
                 </div>
 
                 <div class="login-aux">
-                    <button type="button" id="forgot-password-link" class="forgot-password-link">Forgot password?</button>
+                    <button type="button" id="forgot-password-link" class="forgot-password-link">نسيت كلمة المرور؟</button>
                 </div>
 
                 <div id="login-error" class="login-error hidden" role="alert"></div>
 
                 <button type="submit" class="btn-admin-primary btn-login">
-                    <span>Sign In</span>
+                    <span>تسجيل الدخول</span>
                     <i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i>
                 </button>
             </form>
             <div class="login-footer">
-                <p><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Protected by Firebase Authentication &amp; SSL</p>
+                <p><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> محمي عبر Firebase Authentication و SSL</p>
             </div>
         </div>
     </div>
@@ -79,7 +79,7 @@
         
         <!-- Mobile Header Bar -->
         <header class="mobile-admin-header">
-            <button id="sidebar-toggle" class="sidebar-toggle-btn" aria-label="Toggle Navigation">
+            <button id="sidebar-toggle" class="sidebar-toggle-btn" aria-label="فتح القائمة">
                 <i class="fa-solid fa-bars"></i>
             </button>
             <div class="mobile-logo-text">Taste Admin</div>
@@ -93,8 +93,8 @@
             <div class="sidebar-brand">
                 <img id="sidebar-logo" src="assets/logo.svg" alt="Brand Logo" class="brand-logo" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=150&q=80'">
                 <div class="brand-info">
-                    <h3 id="sidebar-brand-name">Taste Console</h3>
-                    <span id="admin-user-role" class="user-badge">Admin</span>
+                    <h3 id="sidebar-brand-name">لوحة التحكم</h3>
+                    <span id="admin-user-role" class="user-badge">مدير</span>
                 </div>
                 <button id="sidebar-close" class="sidebar-close-btn" title="Close sidebar" aria-label="Close sidebar"><i class="fa-solid fa-xmark"></i></button>
             </div>
@@ -102,19 +102,19 @@
             <nav class="sidebar-nav">
                 <button class="nav-item active" data-tab="tab-overview">
                     <i class="fa-solid fa-chart-line"></i>
-                    <span>Overview</span>
+                    <span>نظرة عامة</span>
                 </button>
                 <button class="nav-item" data-tab="tab-categories">
                     <i class="fa-solid fa-folder-tree"></i>
-                    <span>Categories</span>
+                    <span>التصنيفات</span>
                 </button>
                 <button class="nav-item" data-tab="tab-items">
                     <i class="fa-solid fa-utensils"></i>
-                    <span>Menu Items</span>
+                    <span>الأصناف</span>
                 </button>
                 <button class="nav-item" data-tab="tab-settings">
                     <i class="fa-solid fa-sliders"></i>
-                    <span>Restaurant Settings</span>
+                    <span>إعدادات المطعم</span>
                 </button>
             </nav>
 
@@ -125,7 +125,7 @@
                 </div>
                 <button id="logout-btn" class="btn-logout">
                     <i class="fa-solid fa-right-from-bracket"></i>
-                    <span>Sign Out</span>
+                    <span>تسجيل الخروج</span>
                 </button>
             </div>
         </aside>
@@ -136,37 +136,37 @@
             <!-- A. Overview Dashboard Tab -->
             <section id="tab-overview" class="tab-content active">
                 <div class="panel-header">
-                    <h2>Overview Dashboard</h2>
-                    <p>Real-time analytics for your restaurant menu.</p>
+                    <h2>نظرة عامة</h2>
+                    <p>إحصائيات مباشرة لقائمة مطعمك.</p>
                 </div>
 
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-icon-wrapper"><i class="fa-solid fa-eye"></i></div>
                         <div class="stat-data">
-                            <span class="stat-label">Total Views</span>
+                            <span class="stat-label">إجمالي المشاهدات</span>
                             <h3 id="stat-total-views">0</h3>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon-wrapper"><i class="fa-brands fa-whatsapp"></i></div>
                         <div class="stat-data">
-                            <span class="stat-label">WhatsApp Orders</span>
+                            <span class="stat-label">طلبات الواتساب</span>
                             <h3 id="stat-total-orders">0</h3>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon-wrapper"><i class="fa-solid fa-utensils"></i></div>
                         <div class="stat-data">
-                            <span class="stat-label">Active Items</span>
+                            <span class="stat-label">الأصناف المتوفرة</span>
                             <h3 id="stat-active-items">0</h3>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon-wrapper billing-icon"><i class="fa-solid fa-award"></i></div>
                         <div class="stat-data">
-                            <span class="stat-label">Subscription Plan</span>
-                            <h3 id="stat-subscription-status" class="status-badge-active">Trial</h3>
+                            <span class="stat-label">حالة الاشتراك</span>
+                            <h3 id="stat-subscription-status" class="status-badge-active">تجريبي</h3>
                         </div>
                     </div>
                 </div>
@@ -176,19 +176,19 @@
                     <div class="dashboard-col col-8">
                         <div class="dashboard-card">
                             <div class="card-header">
-                                <h3>Most Popular Dishes</h3>
-                                <p>Dishes with the highest number of click-to-orders.</p>
+                                <h3>الأطباق الأكثر طلباً</h3>
+                                <p>الأطباق الأعلى نقرات طلب عبر الواتساب.</p>
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
                                     <table class="admin-table">
                                         <thead>
                                             <tr>
-                                                <th>Dish Name</th>
-                                                <th>Category</th>
-                                                <th>Price</th>
-                                                <th>WhatsApp Clicks</th>
-                                                <th>Views</th>
+                                                <th>اسم الطبق</th>
+                                                <th>التصنيف</th>
+                                                <th>السعر</th>
+                                                <th>نقرات الواتساب</th>
+                                                <th>المشاهدات</th>
                                             </tr>
                                         </thead>
                                         <tbody id="popular-items-list">
@@ -203,20 +203,20 @@
                     <div class="dashboard-col col-4">
                         <div class="dashboard-card quick-qr-card">
                             <div class="card-header">
-                                <h3>Your QR Code</h3>
-                                <p>Print or download your digital menu's QR code.</p>
+                                <h3>رمز QR الخاص بك</h3>
+                                <p>اطبع أو حمّل رمز QR لقائمتك الرقمية.</p>
                             </div>
                             <div class="card-body qr-panel-body">
                                 <div class="qr-preview-container">
-                                    <img id="admin-qr-img" src="" alt="Menu QR Code">
+                                    <img id="admin-qr-img" src="" alt="رمز QR للمنيو">
                                 </div>
                                 <button id="download-qr-btn" class="btn-admin-secondary btn-full">
                                     <i class="fa-solid fa-download"></i>
-                                    <span>Download High-Res QR</span>
+                                    <span>تحميل QR بجودة عالية</span>
                                 </button>
                                 <a id="view-live-menu-btn" href="#" target="_blank" class="btn-admin-primary btn-full mt-10">
                                     <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                                    <span>View Live Menu</span>
+                                    <span>عرض المنيو المباشر</span>
                                 </a>
                             </div>
                         </div>
@@ -228,12 +228,12 @@
             <section id="tab-categories" class="tab-content">
                 <div class="panel-header flex-header">
                     <div>
-                        <h2>Manage Categories</h2>
-                        <p>Create, edit, delete, and reorder categories. Drag and drop rows to reorder.</p>
+                        <h2>إدارة التصنيفات</h2>
+                        <p>أنشئ التصنيفات وعدّلها واحذفها، واسحب الصفوف لإعادة ترتيبها.</p>
                     </div>
                     <button class="btn-admin-primary" onclick="openAddCategoryModal()">
                         <i class="fa-solid fa-plus"></i>
-                        <span>Add Category</span>
+                        <span>إضافة تصنيف</span>
                     </button>
                 </div>
 
@@ -243,11 +243,10 @@
                             <table class="admin-table">
                                 <thead>
                                     <tr>
-                                        <th class="table-col-sort">Sort</th>
-                                        <th>Category ID</th>
-                                        <th>Name (English)</th>
-                                        <th>Name (Arabic)</th>
-                                        <th class="table-col-actions">Actions</th>
+                                        <th class="table-col-sort">ترتيب</th>
+                                        <th>المعرّف</th>
+                                        <th>الاسم</th>
+                                        <th class="table-col-actions">إجراءات</th>
                                     </tr>
                                 </thead>
                                 <tbody id="categories-table-body" class="sortable-target">
@@ -263,13 +262,13 @@
             <section id="tab-items" class="tab-content">
                 <div class="panel-header flex-header">
                     <div>
-                        <h2>Manage Menu Items</h2>
-                        <p>Create, edit, duplicate, toggle status, and delete food items. Drag rows to reorder.</p>
+                        <h2>إدارة الأصناف</h2>
+                        <p>أنشئ الأصناف وعدّلها وكرّرها وبدّل حالة توفرها، واسحب الصفوف لإعادة ترتيبها.</p>
                     </div>
                     <div class="header-actions">
                        
-                        <select id="items-category-filter" class="admin-select select-inline" title="Filter items by category" aria-label="Filter items by category">
-                            <option value="all">Filter by Category: All</option>
+                        <select id="items-category-filter" class="admin-select select-inline" title="تصفية الأصناف حسب التصنيف" aria-label="تصفية الأصناف حسب التصنيف">
+                            <option value="all">كل التصنيفات</option>
                             <!-- Dynamically populated options -->
                         </select>
                     </div>
@@ -278,21 +277,20 @@
                 <div class="dashboard-card">
                      <button class="btn-admin-primary" onclick="openAddItemModal()">
                             <i class="fa-solid fa-plus" style="margin-right: 2px; "></i>
-                            <span>Add Food Item</span>
+                            <span>إضافة صنف</span>
                         </button>
                     <div class="card-body">
                         <div class="table-responsive">
                             <table class="admin-table">
                                 <thead>
                                     <tr>
-                                        <th class="table-col-sort">Sort</th>
-                                        <th class="table-col-image">Image</th>
-                                        <th>Name (English)</th>
-                                        <th>Name (Arabic)</th>
-                                        <th>Category</th>
-                                        <th>Price</th>
-                                        <th class="table-col-status">Status</th>
-                                        <th class="table-col-actions">Actions</th>
+                                        <th class="table-col-sort">ترتيب</th>
+                                        <th class="table-col-image">الصورة</th>
+                                        <th>الاسم</th>
+                                        <th>التصنيف</th>
+                                        <th>السعر</th>
+                                        <th class="table-col-status">الحالة</th>
+                                        <th class="table-col-actions">إجراءات</th>
                                     </tr>
                                 </thead>
                                 <tbody id="items-table-body" class="sortable-target">
@@ -307,8 +305,8 @@
             <!-- D. Settings Tab -->
             <section id="tab-settings" class="tab-content">
                 <div class="panel-header">
-                    <h2>Restaurant Settings</h2>
-                    <p>Customize branding details, working hours, and primary colors.</p>
+                    <h2>إعدادات المطعم</h2>
+                    <p>خصّص الهوية وساعات العمل والألوان الأساسية.</p>
                 </div>
 
                 <form id="settings-form">
@@ -317,71 +315,71 @@
                         <!-- Left Block: Core fields -->
                         <div class="settings-column">
                             <div class="dashboard-card mb-24">
-                                <div class="card-header"><h3>General Settings</h3></div>
+                                <div class="card-header"><h3>الإعدادات العامة</h3></div>
                                 <div class="card-body">
                                     <div class="form-row">
-                                        <div class="form-group col-6">
+                                        <div class="form-group col-6 en-field">
                                             <label for="settings-name-en">Restaurant Name (English)</label>
-                                            <input type="text" id="settings-name-en" class="admin-input" required>
+                                            <input type="text" id="settings-name-en" class="admin-input">
                                         </div>
                                         <div class="form-group col-6">
-                                            <label for="settings-name-ar">Restaurant Name (Arabic)</label>
+                                            <label for="settings-name-ar">اسم المطعم</label>
                                             <input type="text" id="settings-name-ar" class="admin-input" required dir="rtl">
                                         </div>
                                     </div>
 
                                     <div class="form-row">
-                                        <div class="form-group col-6">
+                                        <div class="form-group col-6 en-field">
                                             <label for="settings-slogan-en">Slogan (English)</label>
                                             <input type="text" id="settings-slogan-en" class="admin-input">
                                         </div>
                                         <div class="form-group col-6">
-                                            <label for="settings-slogan-ar">Slogan (Arabic)</label>
+                                            <label for="settings-slogan-ar">الشعار (السلوغان)</label>
                                             <input type="text" id="settings-slogan-ar" class="admin-input" dir="rtl">
                                         </div>
                                     </div>
 
                                     <div class="form-row">
                                         <div class="form-group col-6">
-                                            <label for="settings-whatsapp">WhatsApp Ordering Phone Number</label>
-                                            <input type="text" id="settings-whatsapp" class="admin-input" placeholder="+970599123456" required>
-                                            <small class="form-tip">Must include international code (e.g. +970599123456)</small>
+                                            <label for="settings-whatsapp">رقم واتساب استقبال الطلبات</label>
+                                            <input type="text" id="settings-whatsapp" class="admin-input" placeholder="+970599123456" dir="ltr" required>
+                                            <small class="form-tip">يجب أن يتضمن الرمز الدولي (مثال: ‎+970599123456)</small>
                                         </div>
                                         <div class="form-group col-6">
-                                            <label for="settings-email">Contact Email</label>
-                                            <input type="email" id="settings-email" class="admin-input" placeholder="info@tasterestaurant.com">
+                                            <label for="settings-email">البريد الإلكتروني للتواصل</label>
+                                            <input type="email" id="settings-email" class="admin-input" placeholder="info@tasterestaurant.com" dir="ltr">
                                         </div>
                                     </div>
 
                                     <div class="form-row">
-                                        <div class="form-group col-6">
+                                        <div class="form-group col-6 en-field">
                                             <label for="settings-hours-en">Working Hours (English)</label>
                                             <input type="text" id="settings-hours-en" class="admin-input" placeholder="Saturday - Friday (12:00 PM - 12:00 AM)">
                                         </div>
                                         <div class="form-group col-6">
-                                            <label for="settings-hours-ar">Working Hours (Arabic)</label>
+                                            <label for="settings-hours-ar">ساعات العمل</label>
                                             <input type="text" id="settings-hours-ar" class="admin-input" placeholder="السبت - الجمعة (12:00 ظهراً - 12:00 ليلاً)" dir="rtl">
                                         </div>
                                     </div>
 
                                     <div class="form-row">
-                                        <div class="form-group col-6">
+                                        <div class="form-group col-6 en-field">
                                             <label for="settings-currency-en">Currency Abbr (English)</label>
-                                            <input type="text" id="settings-currency-en" class="admin-input" placeholder="JD" required>
+                                            <input type="text" id="settings-currency-en" class="admin-input" placeholder="JD">
                                         </div>
                                         <div class="form-group col-6">
-                                            <label for="settings-currency-ar">Currency Abbr (Arabic)</label>
+                                            <label for="settings-currency-ar">العملة</label>
                                             <input type="text" id="settings-currency-ar" class="admin-input" placeholder="دينار" required dir="rtl">
                                         </div>
                                     </div>
 
                                     <div class="form-row">
-                                        <div class="form-group col-6">
+                                        <div class="form-group col-6 en-field">
                                             <label for="settings-address-en">Address (English)</label>
                                             <input type="text" id="settings-address-en" class="admin-input" placeholder="Ramallah, Palestine">
                                         </div>
                                         <div class="form-group col-6">
-                                            <label for="settings-address-ar">Address (Arabic)</label>
+                                            <label for="settings-address-ar">العنوان</label>
                                             <input type="text" id="settings-address-ar" class="admin-input" placeholder="رام الله، فلسطين" dir="rtl">
                                         </div>
                                     </div>
@@ -393,80 +391,80 @@
                         <div class="settings-column">
                             <!-- Logo and Style -->
                             <div class="dashboard-card mb-24">
-                                <div class="card-header"><h3>Branding & Theme Styling</h3></div>
+                                <div class="card-header"><h3>الهوية والألوان</h3></div>
                                 <div class="card-body">
                                     <div class="form-group">
-                                        <label for="settings-logo-url">Restaurant Logo URL</label>
+                                        <label for="settings-logo-url">رابط شعار المطعم</label>
                                         <div class="logo-upload-wrapper">
-                                            <img id="settings-logo-preview" src="" alt="Logo Preview" class="logo-preview-box" hidden>
+                                            <img id="settings-logo-preview" src="" alt="معاينة الشعار" class="logo-preview-box" hidden>
                                             <div class="logo-upload-actions">
-                                                <input type="text" id="settings-logo-url" class="admin-input" placeholder="Paste logo image URL here">
-                                                <span class="file-info">Enter a direct link to your logo image.</span>
+                                                <input type="text" id="settings-logo-url" class="admin-input" placeholder="الصق رابط صورة الشعار هنا" dir="ltr">
+                                                <span class="file-info">أدخل رابطاً مباشراً لصورة الشعار.</span>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="form-group">
-                                        <label for="logoFile">Upload Logo (Crop + Cloudinary)</label>
+                                        <label for="logoFile">رفع الشعار (قصّ ثم رفع)</label>
                                         <div class="logo-upload-actions">
                                             <input type="file" id="logoFile" class="admin-input" accept="image/*">
-                                            <span class="file-info">Pick an image, crop it, then upload to Cloudinary.</span>
+                                            <span class="file-info">اختر صورة، قصّها، ثم ارفعها.</span>
                                         </div>
                                         <div id="logoUploadStatus" class="form-tip" role="status" aria-live="polite"></div>
-                                        <img id="logoPreview" alt="Selected Logo Preview" class="logo-preview-box logo-live-preview" hidden>
+                                        <img id="logoPreview" alt="معاينة الشعار" class="logo-preview-box logo-live-preview" hidden>
                                         <div id="cropContainer" class="logo-crop-container" style="display:none;">
-                                            <img id="cropImage" alt="Crop Logo Target">
+                                            <img id="cropImage" alt="قصّ الشعار">
                                             <button type="button" id="cropConfirm" class="btn-admin-primary">
                                                 <i class="fa-solid fa-crop"></i>
-                                                <span>Confirm Crop</span>
+                                                <span>تأكيد القصّ</span>
                                             </button>
                                         </div>
                                     </div>
 
                                     <div class="form-group">
-                                        <label for="settings-subscription-status">Subscription Status</label>
+                                        <label for="settings-subscription-status">حالة الاشتراك</label>
                                         <select id="settings-subscription-status" class="admin-select">
-                                            <option value="active">Active</option>
-                                            <option value="trial">Trial</option>
-                                            <option value="expired">Expired</option>
+                                            <option value="active">فعّال</option>
+                                            <option value="trial">تجريبي</option>
+                                            <option value="expired">منتهي</option>
                                         </select>
                                     </div>
 
                                     <div class="form-row">
                                         <div class="form-group col-6">
-                                            <label for="settings-portal-role">Access Role</label>
+                                            <label for="settings-portal-role">الدور والصلاحية</label>
                                             <select id="settings-portal-role" class="admin-select">
-                                                <option value="super_admin">Super Admin</option>
-                                                <option value="restaurant_admin">Restaurant Admin</option>
-                                                <option value="staff_editor">Staff Editor</option>
+                                                <option value="super_admin">مدير عام</option>
+                                                <option value="restaurant_admin">مدير المطعم</option>
+                                                <option value="staff_editor">محرر محتوى</option>
                                             </select>
                                         </div>
                                         <div class="form-group col-6">
-                                            <label for="settings-custom-domain">Custom Domain</label>
-                                            <input type="text" id="settings-custom-domain" class="admin-input" placeholder="https://menu.example.com">
-                                            <small class="form-tip">Reserved for future custom domain deployment.</small>
+                                            <label for="settings-custom-domain">دومين مخصص</label>
+                                            <input type="text" id="settings-custom-domain" class="admin-input" placeholder="https://menu.example.com" dir="ltr">
+                                            <small class="form-tip">محجوز لربط دومين مخصص مستقبلاً.</small>
                                         </div>
                                     </div>
 
                                     <div class="form-group">
-                                        <label class="checkbox-label-block" for="settings-dark-mode">Dashboard Dark Mode</label>
+                                        <label class="checkbox-label-block" for="settings-dark-mode">الوضع الداكن للوحة</label>
                                         <div class="toggle-switch-wrapper">
                                             <input type="checkbox" id="settings-dark-mode" checked>
                                             <label for="settings-dark-mode" class="toggle-slider-btn"></label>
-                                            <span class="toggle-label-text">Enabled</span>
+                                            <span class="toggle-label-text">مفعّل</span>
                                         </div>
                                     </div>
 
                                     <div class="color-picker-row">
                                         <div class="color-picker-item">
-                                            <label for="settings-color-bg">Background</label>
+                                            <label for="settings-color-bg">الخلفية</label>
                                             <input type="color" id="settings-color-bg" value="#0A0A0A">
                                         </div>
                                         <div class="color-picker-item">
-                                            <label for="settings-color-surface">Surface Card</label>
+                                            <label for="settings-color-surface">خلفية البطاقات</label>
                                             <input type="color" id="settings-color-surface" value="#121212">
                                         </div>
                                         <div class="color-picker-item">
-                                            <label for="settings-color-gold">Gold Accent</label>
+                                            <label for="settings-color-gold">اللون الذهبي</label>
                                             <input type="color" id="settings-color-gold" value="#D4AF37">
                                         </div>
                                     </div>
@@ -475,23 +473,23 @@
 
                             <!-- Data portability -->
                             <div class="dashboard-card">
-                                <div class="card-header"><h3>Backup & Data Portability</h3></div>
+                                <div class="card-header"><h3>النسخ الاحتياطي ونقل البيانات</h3></div>
                                 <div class="card-body backups-panel">
-                                    <p class="section-tip">Export all menu items and categories as a single JSON file, or restore data using a valid exported JSON file.</p>
+                                    <p class="section-tip">صدّر المنيو كاملاً (الأصناف والتصنيفات) كملف JSON واحد، أو استعد البيانات من ملف تصدير صالح.</p>
                                     <div class="backup-actions">
                                         <button type="button" id="btn-export-json" class="btn-admin-secondary">
                                             <i class="fa-solid fa-download"></i>
-                                            <span>Export Menu JSON</span>
+                                            <span>تصدير المنيو (JSON)</span>
                                         </button>
-                                        <input type="file" id="import-json-input" class="hidden-input" accept=".json" aria-label="Import JSON menu" title="Import JSON menu">
+                                        <input type="file" id="import-json-input" class="hidden-input" accept=".json" aria-label="استيراد المنيو (JSON)" title="استيراد المنيو (JSON)">
                                         <button type="button" class="btn-admin-secondary" onclick="document.getElementById('import-json-input').click()">
                                             <i class="fa-solid fa-upload"></i>
-                                            <span>Import Menu JSON</span>
+                                            <span>استيراد المنيو (JSON)</span>
                                         </button>
                                     </div>
                                     <button type="button" id="btn-db-backup" class="btn-admin-secondary btn-full mt-10">
                                       <i class="fa-solid fa-database"></i>
-                                      <span>Create Live Cloud Backup</span>
+                                      <span>إنشاء نسخة احتياطية سحابية</span>
                                     </button>
                                 </div>
                             </div>
@@ -502,7 +500,7 @@
                     <div class="settings-save-bar">
                         <button type="submit" class="btn-admin-primary">
                             <i class="fa-solid fa-floppy-disk"></i>
-                            <span>Save Restaurant Config</span>
+                            <span>حفظ الإعدادات</span>
                         </button>
                     </div>
                 </form>
@@ -518,8 +516,8 @@
     <div id="modal-item" class="modal-overlay">
         <div class="modal-card modal-lg">
             <div class="modal-header">
-                <h3 id="item-modal-title">Add Menu Item</h3>
-                <button class="modal-close-btn" title="Close dialog" aria-label="Close dialog" onclick="closeItemModal()"><i class="fa-solid fa-xmark"></i></button>
+                <h3 id="item-modal-title">إضافة صنف جديد</h3>
+                <button class="modal-close-btn" title="إغلاق" aria-label="إغلاق" onclick="closeItemModal()"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <form id="item-form">
                 <input type="hidden" id="item-edit-id">
@@ -527,24 +525,24 @@
                     
                     <!-- Names row -->
                     <div class="form-row">
-                        <div class="form-group col-6">
+                        <div class="form-group col-6 en-field">
                             <label for="item-name-en">Dish Name (English)</label>
-                            <input type="text" id="item-name-en" class="admin-input" placeholder="e.g. Truffle Burger" required>
+                            <input type="text" id="item-name-en" class="admin-input" placeholder="e.g. Truffle Burger">
                         </div>
                         <div class="form-group col-6">
-                            <label for="item-name-ar">Dish Name (Arabic)</label>
+                            <label for="item-name-ar">اسم الطبق</label>
                             <input type="text" id="item-name-ar" class="admin-input" placeholder="مثال: برغر الترافل" required dir="rtl">
                         </div>
                     </div>
 
                     <!-- Descriptions row -->
                     <div class="form-row">
-                        <div class="form-group col-6">
+                        <div class="form-group col-6 en-field">
                             <label for="item-desc-en">Description (English)</label>
-                            <textarea id="item-desc-en" class="admin-textarea" rows="3" placeholder="Describe the ingredients..." required></textarea>
+                            <textarea id="item-desc-en" class="admin-textarea" rows="3" placeholder="Describe the ingredients..."></textarea>
                         </div>
                         <div class="form-group col-6">
-                            <label for="item-desc-ar">Description (Arabic)</label>
+                            <label for="item-desc-ar">الوصف</label>
                             <textarea id="item-desc-ar" class="admin-textarea" rows="3" placeholder="وصف المكونات والنكهة..." required dir="rtl"></textarea>
                         </div>
                     </div>
@@ -552,55 +550,55 @@
                     <!-- Category and Price row -->
                     <div class="form-row">
                         <div class="form-group col-4">
-                            <label for="item-category">Category</label>
+                            <label for="item-category">التصنيف</label>
                             <select id="item-category" class="admin-select" required>
                                 <!-- Categories loaded dynamically -->
                             </select>
                         </div>
                         <div class="form-group col-4">
-                            <label for="item-price">Price</label>
+                            <label for="item-price">السعر</label>
                             <input type="number" id="item-price" class="admin-input" step="0.01" min="0" placeholder="8.00" required>
                         </div>
                         <div class="form-group col-4">
-                            <label for="item-available" class="checkbox-label-block">Availability Status</label>
+                            <label for="item-available" class="checkbox-label-block">حالة التوفر</label>
                             <div class="toggle-switch-wrapper">
                                 <input type="checkbox" id="item-available" checked>
                                 <label for="item-available" class="toggle-slider-btn"></label>
-                                <span class="toggle-label-text">In Stock</span>
+                                <span class="toggle-label-text">متوفر</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Tags row -->
                     <div class="form-row">
-                        <div class="form-group col-6">
+                        <div class="form-group col-6 en-field">
                             <label for="item-tags-en">Tags (English) - Comma Separated</label>
                             <input type="text" id="item-tags-en" class="admin-input" placeholder="e.g. New, Spicy, Chef Special">
                         </div>
                         <div class="form-group col-6">
-                            <label for="item-tags-ar">Tags (Arabic) - Comma Separated</label>
+                            <label for="item-tags-ar">الوسوم (افصل بينها بفاصلة)</label>
                             <input type="text" id="item-tags-ar" class="admin-input" placeholder="مثال: جديد، حار، مميز" dir="rtl">
                         </div>
                     </div>
 
                     <!-- Image URL -->
                     <div class="form-group">
-                        <label for="imageUrl">Dish Image URL</label>
+                        <label for="imageUrl">رابط صورة الطبق</label>
                         <div class="dish-image-picker">
-                            <img id="item-img-preview" src="" alt="Item Image" class="item-img-preview-box" hidden>
+                            <img id="item-img-preview" src="" alt="صورة الصنف" class="item-img-preview-box" hidden>
                             <div class="image-picker-actions">
-                                <input type="text" id="imageUrl" class="admin-input" placeholder="Paste image URL here">
-                                <span class="file-info">Enter a direct link to the dish image.</span>
+                                <input type="text" id="imageUrl" class="admin-input" placeholder="الصق رابط الصورة هنا" dir="ltr">
+                                <span class="file-info">أدخل رابطاً مباشراً لصورة الطبق.</span>
                             </div>
                         </div>
                     </div>
                 </div>
                 
                 <div class="modal-footer">
-                    <button type="button" class="btn-admin-secondary" onclick="closeItemModal()">Cancel</button>
+                    <button type="button" class="btn-admin-secondary" onclick="closeItemModal()">إلغاء</button>
                     <button type="submit" class="btn-admin-primary">
                         <i class="fa-solid fa-check"></i>
-                        <span>Save Item</span>
+                        <span>حفظ الصنف</span>
                     </button>
                 </div>
             </form>
@@ -611,34 +609,34 @@
     <div id="modal-category" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
-                <h3 id="category-modal-title">Add Category</h3>
-                <button class="modal-close-btn" title="Close dialog" aria-label="Close dialog" onclick="closeCategoryModal()"><i class="fa-solid fa-xmark"></i></button>
+                <h3 id="category-modal-title">إضافة تصنيف</h3>
+                <button class="modal-close-btn" title="إغلاق" aria-label="إغلاق" onclick="closeCategoryModal()"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <form id="category-form">
                 <input type="hidden" id="category-edit-id">
                 <input type="hidden" id="category-order-index">
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="category-id-val">Unique ID (English URL Slug)</label>
-                        <input type="text" id="category-id-val" class="admin-input" placeholder="e.g. burgers" required>
-                        <small class="form-tip">Alphanumeric lowercase only (e.g. burgers, drinks, local-sides)</small>
+                        <label for="category-id-val">المعرّف الفريد (لاتيني للرابط)</label>
+                        <input type="text" id="category-id-val" class="admin-input" placeholder="مثال: burgers" dir="ltr" required>
+                        <small class="form-tip">أحرف لاتينية صغيرة وأرقام فقط (مثال: burgers، drinks)</small>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group en-field">
                         <label for="category-name-en">Category Name (English)</label>
-                        <input type="text" id="category-name-en" class="admin-input" placeholder="e.g. Burgers" required>
+                        <input type="text" id="category-name-en" class="admin-input" placeholder="e.g. Burgers">
                     </div>
 
                     <div class="form-group">
-                        <label for="category-name-ar">Category Name (Arabic)</label>
+                        <label for="category-name-ar">اسم التصنيف</label>
                         <input type="text" id="category-name-ar" class="admin-input" placeholder="مثال: البرغر" required dir="rtl">
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn-admin-secondary" onclick="closeCategoryModal()">Cancel</button>
+                    <button type="button" class="btn-admin-secondary" onclick="closeCategoryModal()">إلغاء</button>
                     <button type="submit" class="btn-admin-primary">
                         <i class="fa-solid fa-check"></i>
-                        <span>Save Category</span>
+                        <span>حفظ التصنيف</span>
                     </button>
                 </div>
             </form>
@@ -650,12 +648,12 @@
         <div class="modal-card modal-confirm-card">
             <div class="modal-body text-center">
                 <i class="fa-solid fa-circle-exclamation warning-icon"></i>
-                <h3 id="confirm-title">Are you sure?</h3>
-                <p id="confirm-message">This action cannot be undone.</p>
+                <h3 id="confirm-title">هل أنت متأكد؟</h3>
+                <p id="confirm-message">لا يمكن التراجع عن هذا الإجراء.</p>
             </div>
             <div class="modal-footer flex-center">
-                <button type="button" id="confirm-cancel-btn" class="btn-admin-secondary">Cancel</button>
-                <button type="button" id="confirm-action-btn" class="btn-admin-danger">Delete</button>
+                <button type="button" id="confirm-cancel-btn" class="btn-admin-secondary">إلغاء</button>
+                <button type="button" id="confirm-action-btn" class="btn-admin-danger">حذف</button>
             </div>
         </div>
     </div>
@@ -676,7 +674,7 @@
         toggle.addEventListener('click', function () {
           var show = input.type === 'password';
           input.type = show ? 'text' : 'password';
-          toggle.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+          toggle.setAttribute('aria-label', show ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور');
           var icon = toggle.querySelector('i');
           if (icon) {
             icon.classList.toggle('fa-eye', !show);
