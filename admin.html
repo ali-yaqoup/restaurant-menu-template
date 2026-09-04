@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لوحة تحكم المطعم</title>
+    <link rel="shortcut icon" href="assets/logo-seal.jpg" type="image/jpeg">
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,7 +17,7 @@
 
     
     <!-- Admin Dashboard Styles -->
-    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="admin.css?v=3">
 
     <!-- Vercel Speed Insights -->
     <script type="module">
@@ -35,12 +36,13 @@
     <div id="login-container" class="login-container">
         <div class="login-card">
             <div class="login-header">
+                <p class="login-kicker">بوابة الإدارة</p>
                 <div class="login-logo-frame">
                     <i class="fa-solid fa-utensils" aria-hidden="true"></i>
-                    <img src="assets/logo.svg" alt="" class="login-logo" onerror="this.style.display='none'">
+                    <img src="assets/logo-seal.jpg" alt="" class="login-logo" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
                 </div>
                 <h2>لوحة التحكم</h2>
-                <p>بوابة إدارة المطعم</p>
+                <p>إدارة القائمة والطلبات من مكان واحد</p>
             </div>
 
             <form id="login-form">
@@ -75,7 +77,7 @@
                 </button>
             </form>
             <div class="login-footer">
-                <p><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> محمي عبر Firebase Authentication و SSL</p>
+                <p><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> اتصال آمن ومحمي</p>
             </div>
         </div>
     </div>
@@ -97,7 +99,9 @@
         <!-- Sidebar Navigation -->
         <aside id="admin-sidebar" class="admin-sidebar">
             <div class="sidebar-brand">
-                <img id="sidebar-logo" src="assets/logo.svg" alt="شعار المطعم" class="brand-logo" onerror="this.style.display='none'">
+                <div class="brand-logo-frame">
+                    <img id="sidebar-logo" src="assets/logo-seal.jpg" alt="شعار المطعم" class="brand-logo" onerror="this.style.display='none'">
+                </div>
                 <div class="brand-info">
                     <h3 id="sidebar-brand-name">لوحة التحكم</h3>
                     <span id="admin-user-role" class="user-badge">مدير</span>
@@ -148,7 +152,7 @@
             <section id="tab-overview" class="tab-content active">
                 <div class="panel-header">
                     <h2>نظرة عامة</h2>
-                    <p>إحصائيات مباشرة لقائمة مطعمك.</p>
+                    <p>أرقام مباشرة من قائمتك وطلباتك.</p>
                 </div>
 
                 <div class="stats-grid">
@@ -191,7 +195,7 @@
                         <div class="dashboard-card">
                             <div class="card-header">
                                 <h3>الأطباق الأكثر طلباً</h3>
-                                <p>الأطباق الأعلى نقرات طلب عبر الواتساب.</p>
+                                <p>الأطباق الأعلى طلباً من الزبائن عبر المنيو.</p>
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
@@ -201,7 +205,7 @@
                                                 <th>اسم الطبق</th>
                                                 <th>التصنيف</th>
                                                 <th>السعر</th>
-                                                <th>نقرات الواتساب</th>
+                                                <th>نقرات الطلب</th>
                                                 <th>المشاهدات</th>
                                             </tr>
                                         </thead>
@@ -518,7 +522,7 @@
                                             <span>تصدير المنيو (JSON)</span>
                                         </button>
                                         <input type="file" id="import-json-input" class="hidden-input" accept=".json" aria-label="استيراد المنيو (JSON)" title="استيراد المنيو (JSON)">
-                                        <button type="button" class="btn-admin-secondary" onclick="document.getElementById('import-json-input').click()">
+                                        <button type="button" id="btn-import-json" class="btn-admin-secondary" onclick="document.getElementById('import-json-input').click()">
                                             <i class="fa-solid fa-upload"></i>
                                             <span>استيراد المنيو (JSON)</span>
                                         </button>
@@ -697,7 +701,6 @@
     <!-- Main Controller Logic -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
     <script>
-      // TODO: replace with your real Cloudinary cloud name
       window.CLOUDINARY_CLOUD_NAME = "t94xf7rb";
       window.CLOUDINARY_UPLOAD_PRESET = "menu_test";
     </script>
@@ -719,6 +722,6 @@
         });
       })();
     </script>
-    <script type="module" src="admin.js?v=7"></script>
+    <script type="module" src="admin.js?v=9"></script>
 </body>
 </html>

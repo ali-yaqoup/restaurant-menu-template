@@ -119,7 +119,61 @@ service cloud.firestore {
 
       // ---- Customer orders --------------------------------------------------
       // Anonymous customers may CREATE a tightly-validated order document.
-      // Only restaurant staff can read, update (status changes), or delete.
+      // Each line item must have a fixed shape; `total` must match the sum of
+      // price * quantity (within 0.05 to tolerate float serialization).
+      // Rules cannot look up live menu prices — pair this with App Check and
+      // treat the admin dashboard as the source of truth for fulfillment.
+      function validOrderItem(item) {
+        return item is map &&
+          item.keys().hasOnly(['id', 'name', 'price', 'quantity']) &&
+          item.id is string &&
+          item.id.size() >= 1 &&
+          item.id.size() <= 80 &&
+          item.name is string &&
+          item.name.size() >= 1 &&
+          item.name.size() <= 120 &&
+          item.price is number &&
+          item.price >= 0 &&
+          item.price <= 10000 &&
+          item.quantity is int &&
+          item.quantity >= 1 &&
+          item.quantity <= 99;
+      }
+
+      // Recursion depth is limited (~20). Validate in chunks of 10.
+      function itemsValidRange(items, start, end) {
+        return start >= end ||
+          start >= items.size() ||
+          (validOrderItem(items[start]) && itemsValidRange(items, start + 1, end));
+      }
+
+      function allOrderItemsValid(items) {
+        return itemsValidRange(items, 0, 10) &&
+          itemsValidRange(items, 10, 20) &&
+          itemsValidRange(items, 20, 30) &&
+          itemsValidRange(items, 30, 40) &&
+          itemsValidRange(items, 40, 50);
+      }
+
+      function itemsSumRange(items, start, end) {
+        return (start >= end || start >= items.size())
+          ? 0.0
+          : (items[start].price * items[start].quantity) + itemsSumRange(items, start + 1, end);
+      }
+
+      function orderItemsTotal(items) {
+        return itemsSumRange(items, 0, 10) +
+          itemsSumRange(items, 10, 20) +
+          itemsSumRange(items, 20, 30) +
+          itemsSumRange(items, 30, 40) +
+          itemsSumRange(items, 40, 50);
+      }
+
+      function totalMatchesItems(data) {
+        return data.total >= orderItemsTotal(data.items) - 0.05 &&
+          data.total <= orderItemsTotal(data.items) + 0.05;
+      }
+
       match /orders/{orderId} {
         allow read: if isRestaurantStaff(restaurantId);
 
@@ -131,9 +185,11 @@ service cloud.firestore {
           request.resource.data.items is list &&
           request.resource.data.items.size() >= 1 &&
           request.resource.data.items.size() <= 50 &&
+          allOrderItemsValid(request.resource.data.items) &&
           request.resource.data.total is number &&
           request.resource.data.total >= 0 &&
           request.resource.data.total <= 100000 &&
+          totalMatchesItems(request.resource.data) &&
           request.resource.data.customerName is string &&
           request.resource.data.customerName.size() >= 1 &&
           request.resource.data.customerName.size() <= 80 &&
