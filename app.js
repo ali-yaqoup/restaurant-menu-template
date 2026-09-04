@@ -4,6 +4,7 @@
  */
 
 import { db, isFirebaseReady } from "./firebase-config.js?v=3";
+import { getPublicOrderErrorMessage } from "./firebase-errors.js";
 import {
     doc,
     collection,
@@ -152,10 +153,15 @@ const translations = {
         addToOrder: "Add to Order",
         currency: "JD",
         itemAdded: "Item added to your order!",
-        singleOrderText: "Hello, I would like to order: 1 x {item} ({price} {currency}). Please confirm.",
+        cartPruned: "Some dishes were removed because they are no longer available.",
+        orderOffline: "Ordering is unavailable right now. Check your connection and try again.",
+        emptyCheckout: "Add dishes to your order first.",
         menuOfflineTitle: "Menu Temporarily Offline",
         menuOfflineDesc: "This digital menu is temporarily unavailable. Please contact the restaurant administration.",
-        outOfStock: "Out of Stock"
+        outOfStock: "Out of Stock",
+        qtyDecrease: "Decrease quantity",
+        qtyIncrease: "Increase quantity",
+        removeItem: "Remove item"
     },
     ar: {
         title: "مطعم تيست - قائمة الطعام الرقمية المميزة",
@@ -184,10 +190,15 @@ const translations = {
         addToOrder: "أضف للطلب",
         currency: "دينار",
         itemAdded: "تمت إضافة الطبق لطلبك!",
-        singleOrderText: "مرحباً، أود طلب: 1 x {item} بسعر ({price} {currency}). يرجى تأكيد الطلب.",
+        cartPruned: "تمت إزالة أطباق لم تعد متوفرة من طلبك.",
+        orderOffline: "الطلب غير متاح حالياً. تحقق من الاتصال وحاول مجدداً.",
+        emptyCheckout: "أضف أطباقاً إلى طلبك أولاً.",
         menuOfflineTitle: "قائمة الطعام متوقفة مؤقتاً",
         menuOfflineDesc: "هذه القائمة متوقفة حالياً عن العمل. يرجى مراجعة إدارة المطعم.",
-        outOfStock: "غير متوفر"
+        outOfStock: "غير متوفر",
+        qtyDecrease: "إنقاص الكمية",
+        qtyIncrease: "زيادة الكمية",
+        removeItem: "إزالة الطبق"
     }
 };
 
@@ -198,6 +209,7 @@ let currentLanguage = "ar"; // Arabic-only experience
 let currentCategory = "all";
 let searchQuery = "";
 let cart = [];
+let isSubmittingOrder = false;
 
 // Restaurant config data loaded from DB (or fallback)
 let restaurantConfig = { ...fallbackRestaurant };
@@ -319,6 +331,7 @@ function syncWithFirestore() {
         if (!snapshot.exists()) {
             console.warn(`Restaurant "${activeRestaurantId}" not found in Firestore. Loading local template...`);
             applyRestaurantConfig(fallbackRestaurant);
+            showToast(translations[currentLanguage].menuOfflineDesc);
             hideLoader();
             return;
         }
@@ -378,7 +391,7 @@ function syncWithFirestore() {
         });
 
         if (fetchedItems.length > 0) {
-            applyMenuItems(fetchedItems);
+            applyMenuItems(fetchedItems, { pruneCart: true });
         } else {
             applyMenuItems(fallbackItems);
         }
@@ -404,6 +417,11 @@ function showExpiredScreen() {
     if (expiredScreen) {
         expiredScreen.classList.remove("hidden");
     }
+    document.querySelector("main")?.setAttribute("inert", "");
+    document.querySelector(".main-header")?.setAttribute("inert", "");
+    document.querySelector(".main-footer")?.setAttribute("inert", "");
+    cartDrawer?.setAttribute("inert", "");
+    floatingWhatsappBtn?.setAttribute("hidden", "");
 }
 
 // Increment overall restaurant views counter once per session
@@ -462,6 +480,27 @@ function escapeHtml(value) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
+}
+
+function localizedText(value, lang = currentLanguage) {
+    if (value == null) return "";
+    if (typeof value === "string") return value;
+    if (typeof value === "object") {
+        return value[lang] || value.ar || value.en || "";
+    }
+    return String(value);
+}
+
+function safeMediaUrl(url) {
+    const v = String(url ?? "").trim();
+    if (!v) return "";
+    if (/^(javascript|data|vbscript):/i.test(v)) return "";
+    return v;
+}
+
+function telHref(phone) {
+    const digits = String(phone ?? "").replace(/[^\d+]/g, "");
+    return digits ? `tel:${digits}` : "";
 }
 
 // Validate a CSS color before injecting it into a <style> element. Accepts hex,
@@ -588,9 +627,13 @@ function applyCategories(cats) {
     updateCategoryTitleText();
 }
 
-function applyMenuItems(items) {
-    menuItemsList = items;
+function applyMenuItems(items, { pruneCart = false } = {}) {
+    menuItemsList = Array.isArray(items) ? items : [];
+    if (pruneCart) {
+        pruneCartAgainstMenu();
+    }
     renderMenuItems();
+    renderCart();
     if (getFilterCategories().length > 0) {
         renderFilterModal();
     }
@@ -640,21 +683,27 @@ function applyLanguage(lang) {
     document.documentElement.setAttribute("dir", lang === "ar" ? "rtl" : "ltr");
     
     // Header title
-    document.title = restaurantConfig.name[lang] || restaurantConfig.name.en;
+    document.title = localizedText(restaurantConfig.name) || "Taste Restaurant";
 
     // Dynamic brand text
     const brandNameEl = document.getElementById("nav-brand-name");
     const logoImgEl = document.getElementById("nav-logo-img");
-    if (brandNameEl) brandNameEl.textContent = restaurantConfig.name[lang] || restaurantConfig.name.en;
-    if (logoImgEl && restaurantConfig.logoUrl) logoImgEl.src = restaurantConfig.logoUrl;
+    if (brandNameEl) brandNameEl.textContent = localizedText(restaurantConfig.name);
+    if (logoImgEl && restaurantConfig.logoUrl) {
+        const logo = safeMediaUrl(restaurantConfig.logoUrl);
+        if (logo) logoImgEl.src = logo;
+    }
 
     // Hero details
     const heroName = document.getElementById("hero-restaurant-name");
     const heroSlogan = document.getElementById("hero-restaurant-slogan");
     const heroLogo = document.getElementById("hero-logo-img");
-    if (heroName) heroName.textContent = restaurantConfig.name[lang] || restaurantConfig.name.en;
-    if (heroSlogan) heroSlogan.textContent = restaurantConfig.slogan[lang] || restaurantConfig.slogan.en;
-    if (heroLogo && restaurantConfig.logoUrl) heroLogo.src = restaurantConfig.logoUrl;
+    if (heroName) heroName.textContent = localizedText(restaurantConfig.name);
+    if (heroSlogan) heroSlogan.textContent = localizedText(restaurantConfig.slogan);
+    if (heroLogo && restaurantConfig.logoUrl) {
+        const logo = safeMediaUrl(restaurantConfig.logoUrl);
+        if (logo) heroLogo.src = logo;
+    }
 
     // Footer details
     const footerLogo = document.getElementById("footer-logo-img");
@@ -664,18 +713,27 @@ function applyLanguage(lang) {
     
     const footerHours = document.getElementById("footer-hours-val");
     const footerPhone = document.getElementById("footer-phone-val");
+    const footerPhoneLink = document.getElementById("footer-phone-link");
     const footerEmail = document.getElementById("footer-email-val");
+    const footerEmailLink = document.getElementById("footer-email-link");
     const footerAddress = document.getElementById("footer-address-val");
 
-    if (footerLogo && restaurantConfig.logoUrl) footerLogo.src = restaurantConfig.logoUrl;
-    if (footerName) footerName.textContent = restaurantConfig.name[lang] || restaurantConfig.name.en;
-    if (footerSlogan) footerSlogan.textContent = restaurantConfig.slogan[lang] || restaurantConfig.slogan.en;
-    if (footerCopyrightName) footerCopyrightName.textContent = restaurantConfig.name[lang] || restaurantConfig.name.en;
+    const logo = safeMediaUrl(restaurantConfig.logoUrl);
+    if (footerLogo && logo) footerLogo.src = logo;
+    if (footerName) footerName.textContent = localizedText(restaurantConfig.name);
+    if (footerSlogan) footerSlogan.textContent = localizedText(restaurantConfig.slogan);
+    if (footerCopyrightName) footerCopyrightName.textContent = localizedText(restaurantConfig.name);
     
-    if (footerHours) footerHours.textContent = restaurantConfig.workingHours[lang] || restaurantConfig.workingHours.en;
-    if (footerPhone) footerPhone.textContent = restaurantConfig.whatsappNumber;
-    if (footerEmail) footerEmail.textContent = restaurantConfig.email || "info@tasterestaurant.com";
-    if (footerAddress) footerAddress.textContent = restaurantConfig.address[lang] || restaurantConfig.address.en;
+    if (footerHours) footerHours.textContent = localizedText(restaurantConfig.workingHours);
+    if (footerPhone) footerPhone.textContent = restaurantConfig.whatsappNumber || "";
+    if (footerPhoneLink) {
+        const href = telHref(restaurantConfig.whatsappNumber);
+        if (href) footerPhoneLink.setAttribute("href", href);
+    }
+    const email = restaurantConfig.email || "info@tasterestaurant.com";
+    if (footerEmail) footerEmail.textContent = email;
+    if (footerEmailLink && email) footerEmailLink.setAttribute("href", `mailto:${email}`);
+    if (footerAddress) footerAddress.textContent = localizedText(restaurantConfig.address);
 
     // Scan DOM for elements with translation tags
     document.querySelectorAll("[data-translate]").forEach(elem => {
@@ -713,7 +771,7 @@ function updateCategoryTitleText() {
     } else {
         const activeCat = categoriesList.find(c => c.id === currentCategory);
         if (activeCat) {
-            currentCategoryTitle.textContent = activeCat.name[currentLanguage] || activeCat.name.en;
+            currentCategoryTitle.textContent = localizedText(activeCat.name);
         } else {
             currentCategoryTitle.textContent = translations[currentLanguage].catAll;
         }
@@ -860,7 +918,7 @@ function renderMenuItems() {
     menuGrid.innerHTML = "";
     
     const lang = currentLanguage;
-    const currencySymbol = restaurantConfig.currency[lang] || restaurantConfig.currency.en || translations[lang].currency;
+    const currencySymbol = localizedText(restaurantConfig.currency) || translations[lang].currency;
     
     // Filter Items by category and query
     const filteredItems = menuItemsList.filter(item => {
@@ -871,15 +929,15 @@ function renderMenuItems() {
         const searchLower = searchQuery.toLowerCase().trim();
         if (!searchLower) return matchesCategory;
 
-        const nameEN = (item.name.en || "").toLowerCase();
-        const nameAR = item.name.ar || "";
-        const descEN = (item.description.en || "").toLowerCase();
-        const descAR = item.description.ar || "";
+        const nameText = localizedText(item?.name).toLowerCase();
+        const descText = localizedText(item?.description).toLowerCase();
+        const nameAR = String(item?.name?.ar || "");
+        const descAR = String(item?.description?.ar || "");
         
-        const matchesSearch = nameEN.includes(searchLower) || 
-                              nameAR.includes(searchLower) ||
-                              descEN.includes(searchLower) ||
-                              descAR.includes(searchLower);
+        const matchesSearch = nameText.includes(searchLower) ||
+                              nameAR.includes(searchQuery.trim()) ||
+                              descText.includes(searchLower) ||
+                              descAR.includes(searchQuery.trim());
                               
         return matchesCategory && matchesSearch;
     });
@@ -922,9 +980,9 @@ function renderMenuItems() {
         // Add to Cart disables if out of stock
         const actionDisabled = isOutOfStock ? "disabled" : "";
 
-        const safeImg = escapeHtml(optimizedImg(item.imageUrl || '', 800));
-        const safeName = escapeHtml(item.name[lang] || item.name.en || '');
-        const safeDesc = escapeHtml(item.description[lang] || item.description.en || "");
+        const safeImg = escapeHtml(optimizedImg(safeMediaUrl(item.imageUrl) || "", 800));
+        const safeName = escapeHtml(localizedText(item.name));
+        const safeDesc = escapeHtml(localizedText(item.description));
         const safeId = escapeHtml(item.id);
         card.innerHTML = `
             <div class="card-img-container">
@@ -1028,6 +1086,8 @@ function triggerButtonPressEffect(button) {
 function showToast(message) {
     const toast = document.createElement("div");
     toast.className = "toast-message";
+    toast.setAttribute("role", "status");
+    toast.setAttribute("aria-live", "polite");
     toast.textContent = message;
     
     Object.assign(toast.style, {
@@ -1084,9 +1144,55 @@ window.removeFromCart = function(itemId) {
     renderCart();
 };
 
+function pruneCartAgainstMenu() {
+    if (!Array.isArray(cart) || cart.length === 0) return;
+    const before = cart.length;
+    const availableIds = new Set(
+        menuItemsList
+            .filter((item) => item && item.id && item.isAvailable !== false)
+            .map((item) => item.id)
+    );
+    cart = cart.filter((entry) => availableIds.has(entry.id));
+    if (cart.length !== before) {
+        saveCartToStorage();
+        showToast(translations[currentLanguage].cartPruned);
+    }
+}
+
+function getOrderableCartItems() {
+    const lines = [];
+    let total = 0;
+    if (!Array.isArray(cart)) return { lines, total };
+    cart.forEach((cartItem) => {
+        const item = menuItemsList.find((entry) => entry.id === cartItem.id);
+        if (!item || item.isAvailable === false) return;
+        const quantity = Math.min(99, Math.max(1, Math.floor(Number(cartItem.quantity) || 0)));
+        if (!quantity) return;
+        const price = Number(item.price) || 0;
+        total += price * quantity;
+        lines.push({
+            id: String(item.id).slice(0, 80),
+            name: String(localizedText(item.name) || item.id).slice(0, 120),
+            price,
+            quantity
+        });
+    });
+    return { lines, total };
+}
+
+function updateCheckoutButtonState() {
+    const footer = document.querySelector(".cart-footer");
+    const { lines } = getOrderableCartItems();
+    const canSubmit = lines.length > 0 && isFirebaseReady && Boolean(db);
+    if (whatsappCheckoutBtn && !isSubmittingOrder) {
+        whatsappCheckoutBtn.disabled = !canSubmit;
+    }
+    footer?.classList.toggle("is-empty", cart.length === 0);
+}
+
 function renderCart() {
     const lang = currentLanguage;
-    const currencySymbol = restaurantConfig.currency[lang] || restaurantConfig.currency.en || translations[lang].currency;
+    const currencySymbol = localizedText(restaurantConfig.currency) || translations[lang].currency;
     
     if (cart.length === 0) {
         cartItemsContainer.classList.add("hidden");
@@ -1095,59 +1201,62 @@ function renderCart() {
         cartCountBadge.textContent = "0";
         floatingCartBadge.textContent = "0";
         floatingCartBadge.classList.add("hidden");
-    } else {
-        cartItemsContainer.classList.remove("hidden");
-        cartEmptyState.classList.add("hidden");
-        cartItemsContainer.innerHTML = "";
-        
-        let total = 0;
-        let totalItemsCount = 0;
-        
-        cart.forEach(cartItem => {
-            const item = menuItemsList.find(i => i.id === cartItem.id);
-            if (!item) return;
-            
-            const itemTotal = item.price * cartItem.quantity;
-            total += itemTotal;
-            totalItemsCount += cartItem.quantity;
-            
-            const cartItemEl = document.createElement("div");
-            cartItemEl.className = "cart-item";
-            
-            const safeCartImg = escapeHtml(optimizedImg(item.imageUrl || '', 200));
-            const safeCartName = escapeHtml(item.name[lang] || item.name.en || '');
-            const safeCartId = escapeHtml(item.id);
-            cartItemEl.innerHTML = `
-                <img src="${safeCartImg}" alt="${safeCartName}" class="cart-item-img" loading="lazy" decoding="async">
-                <div class="cart-item-info">
-                    <div>
-                        <h4 class="cart-item-title">${safeCartName}</h4>
-                        <span class="cart-item-price">${Number(item.price).toFixed(2)} ${currencySymbol}</span>
-                    </div>
-                    <div class="cart-item-controls">
-                        <div class="quantity-controller">
-                            <button class="btn-qty" data-action="qty-dec" data-item-id="${safeCartId}" aria-label="Decrease quantity">
-                                <i class="fa-solid fa-minus"></i>
-                            </button>
-                            <span class="qty-val">${cartItem.quantity}</span>
-                            <button class="btn-qty" data-action="qty-inc" data-item-id="${safeCartId}" aria-label="Increase quantity">
-                                <i class="fa-solid fa-plus"></i>
-                            </button>
-                        </div>
-                        <button class="btn-cart-remove" data-action="remove" data-item-id="${safeCartId}" aria-label="Remove item">
-                            <i class="fa-solid fa-trash"></i>
+        updateCheckoutButtonState();
+        return;
+    }
+
+    cartItemsContainer.classList.remove("hidden");
+    cartEmptyState.classList.add("hidden");
+    cartItemsContainer.innerHTML = "";
+
+    let total = 0;
+    let totalItemsCount = 0;
+
+    cart.forEach(cartItem => {
+        const item = menuItemsList.find(i => i.id === cartItem.id);
+        if (!item) return;
+
+        const itemTotal = (Number(item.price) || 0) * cartItem.quantity;
+        total += itemTotal;
+        totalItemsCount += cartItem.quantity;
+
+        const cartItemEl = document.createElement("div");
+        cartItemEl.className = "cart-item";
+
+        const safeCartImg = escapeHtml(optimizedImg(safeMediaUrl(item.imageUrl) || "", 200));
+        const safeCartName = escapeHtml(localizedText(item.name));
+        const safeCartId = escapeHtml(item.id);
+        cartItemEl.innerHTML = `
+            <img src="${safeCartImg}" alt="${safeCartName}" class="cart-item-img" loading="lazy" decoding="async">
+            <div class="cart-item-info">
+                <div>
+                    <h4 class="cart-item-title">${safeCartName}</h4>
+                    <span class="cart-item-price">${Number(item.price).toFixed(2)} ${currencySymbol}</span>
+                </div>
+                <div class="cart-item-controls">
+                    <div class="quantity-controller">
+                        <button class="btn-qty" data-action="qty-dec" data-item-id="${safeCartId}" aria-label="${translations[lang].qtyDecrease}">
+                            <i class="fa-solid fa-minus"></i>
+                        </button>
+                        <span class="qty-val">${cartItem.quantity}</span>
+                        <button class="btn-qty" data-action="qty-inc" data-item-id="${safeCartId}" aria-label="${translations[lang].qtyIncrease}">
+                            <i class="fa-solid fa-plus"></i>
                         </button>
                     </div>
+                    <button class="btn-cart-remove" data-action="remove" data-item-id="${safeCartId}" aria-label="${translations[lang].removeItem}">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
                 </div>
-            `;
-            cartItemsContainer.appendChild(cartItemEl);
-        });
-        
-        cartTotalValue.textContent = `${total.toFixed(2)} ${currencySymbol}`;
-        cartCountBadge.textContent = totalItemsCount;
-        floatingCartBadge.textContent = totalItemsCount;
-        floatingCartBadge.classList.remove("hidden");
-    }
+            </div>
+        `;
+        cartItemsContainer.appendChild(cartItemEl);
+    });
+
+    cartTotalValue.textContent = `${total.toFixed(2)} ${currencySymbol}`;
+    cartCountBadge.textContent = totalItemsCount;
+    floatingCartBadge.textContent = totalItemsCount;
+    floatingCartBadge.classList.remove("hidden");
+    updateCheckoutButtonState();
 }
 
 // Storage helpers
@@ -1159,7 +1268,15 @@ function loadCartFromStorage() {
     const savedCart = localStorage.getItem(`tasteMenuCart_${activeRestaurantId}`);
     if (savedCart) {
         try {
-            cart = JSON.parse(savedCart);
+            const parsed = JSON.parse(savedCart);
+            cart = Array.isArray(parsed)
+                ? parsed
+                    .filter((entry) => entry && typeof entry.id === "string" && Number(entry.quantity) > 0)
+                    .map((entry) => ({
+                        id: entry.id,
+                        quantity: Math.min(99, Math.max(1, Math.floor(Number(entry.quantity))))
+                    }))
+                : [];
             renderCart();
         } catch (e) {
             cart = [];
@@ -1202,6 +1319,7 @@ let cartFocusTrap = null;
 function openCartDrawer() {
     resetCartSuccessView();
     cartDrawer.classList.add("active");
+    cartToggle?.setAttribute("aria-expanded", "true");
     document.body.style.overflow = "hidden";
     const cartContent = cartDrawer.querySelector(".cart-content") || cartDrawer;
     cartFocusTrap = createFocusTrap(cartContent);
@@ -1209,6 +1327,7 @@ function openCartDrawer() {
 
 function closeCartDrawer() {
     cartDrawer.classList.remove("active");
+    cartToggle?.setAttribute("aria-expanded", "false");
     document.body.style.overflow = "";
     if (cartFocusTrap) {
         cartFocusTrap.release();
@@ -1221,8 +1340,6 @@ function closeCartDrawer() {
 // ==========================================================================
 // 12b. In-app order submission (orders land in the admin dashboard)
 // ==========================================================================
-let isSubmittingOrder = false;
-
 function showOrderFieldError(message) {
     const hint = document.getElementById("order-form-error");
     if (!hint) return;
@@ -1243,12 +1360,26 @@ function resetCartSuccessView() {
 }
 
 async function submitOrder() {
-    if (isSubmittingOrder || cart.length === 0) return;
+    if (isSubmittingOrder) return;
 
     const nameInput = document.getElementById("order-name");
     const phoneInput = document.getElementById("order-phone");
     const noteInput = document.getElementById("order-note");
     const submitBtn = document.getElementById("whatsapp-checkout");
+
+    pruneCartAgainstMenu();
+    renderCart();
+
+    if (!isFirebaseReady || !db) {
+        showOrderFieldError(translations[currentLanguage].orderOffline);
+        return;
+    }
+
+    const { lines, total } = getOrderableCartItems();
+    if (!lines.length) {
+        showOrderFieldError(translations[currentLanguage].emptyCheckout);
+        return;
+    }
 
     const customerName = (nameInput?.value || "").trim();
     const customerPhone = (phoneInput?.value || "").trim();
@@ -1266,29 +1397,13 @@ async function submitOrder() {
     }
     hideOrderFieldError();
 
-    const items = [];
-    let total = 0;
-    cart.forEach(cartItem => {
-        const item = menuItemsList.find(i => i.id === cartItem.id);
-        if (!item) return;
-        total += item.price * cartItem.quantity;
-        items.push({
-            id: item.id,
-            name: item.name.ar || item.name.en || item.id,
-            price: Number(item.price) || 0,
-            quantity: cartItem.quantity
-        });
-        triggerItemOrderClickTracker(item.id);
-    });
-    if (!items.length) return;
-
     isSubmittingOrder = true;
     submitBtn?.classList.add("is-loading");
     if (submitBtn) submitBtn.disabled = true;
 
     try {
         await addDoc(collection(db, "restaurants", activeRestaurantId, "orders"), {
-            items,
+            items: lines,
             total: Number(total.toFixed(2)),
             customerName: customerName.slice(0, 80),
             customerPhone: customerPhone.slice(0, 30),
@@ -1297,7 +1412,8 @@ async function submitOrder() {
             createdAt: serverTimestamp()
         });
 
-        triggerWhatsAppClicksTracker(); // total-orders counter
+        lines.forEach((line) => triggerItemOrderClickTracker(line.id));
+        triggerWhatsAppClicksTracker();
 
         // Success view
         cart = [];
@@ -1312,11 +1428,11 @@ async function submitOrder() {
         document.getElementById("order-success")?.classList.remove("hidden");
     } catch (error) {
         console.error("Order submission failed:", error);
-        showOrderFieldError("تعذّر إرسال الطلب. تحقق من اتصالك وحاول مجدداً.");
+        showOrderFieldError(getPublicOrderErrorMessage(error));
     } finally {
         isSubmittingOrder = false;
         submitBtn?.classList.remove("is-loading");
-        if (submitBtn) submitBtn.disabled = false;
+        updateCheckoutButtonState();
     }
 }
 
@@ -1410,4 +1526,6 @@ function setupEventListeners() {
         triggerButtonPressEffect(event.currentTarget);
         submitOrder();
     });
+
+    updateCheckoutButtonState();
 }

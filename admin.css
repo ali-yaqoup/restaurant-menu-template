@@ -374,6 +374,14 @@ body.admin-body.admin-light .login-error.success { color: #15803d; }
   background: var(--admin-surface);
 }
 
+.admin-input:disabled,
+.admin-select:disabled,
+.admin-textarea:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: var(--admin-surface-2);
+}
+
 .btn-admin-primary,
 .btn-admin-secondary,
 .btn-admin-danger,

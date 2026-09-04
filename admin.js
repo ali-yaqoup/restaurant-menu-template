@@ -198,8 +198,42 @@ const elements = {
   settingsSubscriptionStatus: document.getElementById('settings-subscription-status'),
   settingsPortalRole: document.getElementById('settings-portal-role'),
   settingsCustomDomain: document.getElementById('settings-custom-domain'),
-  settingsDarkMode: document.getElementById('settings-dark-mode')
+  settingsDarkMode: document.getElementById('settings-dark-mode'),
+  downloadQrBtn: document.getElementById('download-qr-btn'),
+  btnImportJson: document.getElementById('btn-import-json')
 };
+
+function isSuperAdmin() {
+  return state.currentRole === 'super_admin';
+}
+
+function canManageRestaurant() {
+  return ['super_admin', 'restaurant_admin', 'admin'].includes(state.currentRole);
+}
+
+function canEditMenu() {
+  return canManageRestaurant() || state.currentRole === 'staff_editor';
+}
+
+function restaurantConfigForWrite() {
+  const {
+    analytics: _analytics,
+    subscription,
+    accessControl,
+    ...rest
+  } = state.restaurantConfig || {};
+  const payload = { ...rest };
+  if (isSuperAdmin()) {
+    if (subscription) payload.subscription = subscription;
+    if (accessControl) payload.accessControl = accessControl;
+  }
+  return payload;
+}
+
+function menuItemForWrite(item, index) {
+  const { views: _views, orderClicks: _orderClicks, ...rest } = item || {};
+  return { ...rest, orderIndex: index };
+}
 
 function init() {
   bindEvents();
@@ -308,6 +342,7 @@ function bindEvents() {
   elements.confirmCancelBtn.addEventListener('click', closeConfirmModal);
   elements.ordersFilter?.addEventListener('change', renderOrders);
   document.getElementById('reset-analytics-btn')?.addEventListener('click', handleResetAnalytics);
+  document.getElementById('download-qr-btn')?.addEventListener('click', downloadQrCode);
 
   // Close any open modal with Escape, or by clicking its dark overlay
   document.addEventListener('keydown', (event) => {
@@ -354,16 +389,12 @@ function bindEvents() {
   toolbar.innerHTML = '<i class="fa-solid fa-moon"></i><span>تبديل الوضع</span>';
   toolbar.addEventListener('click', () => {
     state.darkMode = !state.darkMode;
+    if (elements.settingsDarkMode) elements.settingsDarkMode.checked = state.darkMode;
     applyTheme();
     persistUiPreferences();
   });
   const footer = document.querySelector('.sidebar-footer');
   footer?.prepend(toolbar);
-
-  elements.viewLiveMenuBtn.addEventListener('click', () => {
-    const baseUrl = state.restaurantConfig.customDomain?.trim() || window.location.origin;
-    window.open(`${baseUrl}${baseUrl.includes('?') ? '&' : '?'}r=${state.restaurantId}`);
-  });
 }
 
 function loadUiPreferences() {
@@ -504,10 +535,7 @@ function renderAdminBrand() {
 }
 
 function updatePermissionAwareUi() {
-  const canManage =
-    state.currentRole === 'super_admin' ||
-    state.currentRole === 'restaurant_admin' ||
-    state.currentRole === 'admin';
+  const canManage = canManageRestaurant();
   const canDelete = canManage;
   document.querySelectorAll('[data-deleteable]').forEach((element) => {
     element.classList.toggle('hidden', !canDelete);
@@ -525,11 +553,27 @@ function updatePermissionAwareUi() {
   }
 
   if (!canManage) {
-    elements.btnBackup.classList.add('hidden');
-    elements.btnExportJson.classList.add('hidden');
+    elements.btnBackup?.classList.add('hidden');
+    elements.btnExportJson?.classList.add('hidden');
+    elements.btnImportJson?.classList.add('hidden');
   } else {
-    elements.btnBackup.classList.remove('hidden');
-    elements.btnExportJson.classList.remove('hidden');
+    elements.btnBackup?.classList.remove('hidden');
+    elements.btnExportJson?.classList.remove('hidden');
+    elements.btnImportJson?.classList.remove('hidden');
+  }
+
+  const lockProtected = !isSuperAdmin();
+  if (elements.settingsSubscriptionStatus) {
+    elements.settingsSubscriptionStatus.disabled = lockProtected;
+    elements.settingsSubscriptionStatus.title = lockProtected
+      ? 'حالة الاشتراك يغيّرها المدير العام فقط'
+      : '';
+  }
+  if (elements.settingsPortalRole) {
+    elements.settingsPortalRole.disabled = lockProtected;
+    elements.settingsPortalRole.title = lockProtected
+      ? 'صلاحية البوابة يغيّرها المدير العام فقط'
+      : '';
   }
 }
 
@@ -599,7 +643,12 @@ function assertAuthenticated() {
 }
 
 function switchTab(tabId) {
-  elements.navItems.forEach((item) => item.classList.toggle('active', item.dataset.tab === tabId));
+  elements.navItems.forEach((item) => {
+    const active = item.dataset.tab === tabId;
+    item.classList.toggle('active', active);
+    if (active) item.setAttribute('aria-current', 'page');
+    else item.removeAttribute('aria-current');
+  });
   elements.tabs.forEach((tab) => tab.classList.toggle('active', tab.id === tabId));
 }
 
@@ -967,8 +1016,8 @@ function renderCategoriesTable() {
         <td>${escapeHtml(category.name?.ar || category.name?.en || '')}</td>
         <td>
           <div class="table-actions">
-            <button type="button" class="btn-admin-secondary" data-action="edit"><i class="fa-solid fa-pen"></i></button>
-            <button type="button" class="btn-admin-danger" data-deleteable data-action="delete"><i class="fa-solid fa-trash"></i></button>
+            <button type="button" class="btn-admin-secondary" data-action="edit" aria-label="تعديل التصنيف"><i class="fa-solid fa-pen"></i></button>
+            <button type="button" class="btn-admin-danger" data-deleteable data-action="delete" aria-label="حذف التصنيف"><i class="fa-solid fa-trash"></i></button>
           </div>
         </td>`;
       row.setAttribute('draggable', 'true');
@@ -1005,10 +1054,10 @@ function renderItemsTable() {
         <td><span class="status-pill ${item.isAvailable === false ? 'out-stock' : 'in-stock'}">${item.isAvailable === false ? 'غير متوفر' : 'متوفر'}</span></td>
         <td>
           <div class="table-actions">
-            <button type="button" class="btn-admin-secondary" data-action="edit"><i class="fa-solid fa-pen"></i></button>
-            <button type="button" class="btn-admin-secondary" data-action="duplicate"><i class="fa-solid fa-copy"></i></button>
-            <button type="button" class="btn-admin-secondary" data-action="toggle"><i class="fa-solid fa-toggle-on"></i></button>
-            <button type="button" class="btn-admin-danger" data-deleteable data-action="delete"><i class="fa-solid fa-trash"></i></button>
+            <button type="button" class="btn-admin-secondary" data-action="edit" aria-label="تعديل الصنف"><i class="fa-solid fa-pen"></i></button>
+            <button type="button" class="btn-admin-secondary" data-action="duplicate" aria-label="نسخ الصنف"><i class="fa-solid fa-copy"></i></button>
+            <button type="button" class="btn-admin-secondary" data-action="toggle" aria-label="تبديل التوفر"><i class="fa-solid fa-toggle-on"></i></button>
+            <button type="button" class="btn-admin-danger" data-deleteable data-action="delete" aria-label="حذف الصنف"><i class="fa-solid fa-trash"></i></button>
           </div>
         </td>`;
       row.setAttribute('draggable', 'true');
@@ -1053,10 +1102,35 @@ function renderOverview() {
 
 function renderQrCode() {
   const baseUrl = state.restaurantConfig.customDomain?.trim() || window.location.origin;
-  const target = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}r=${state.restaurantId}`;
+  const target = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}r=${encodeURIComponent(state.restaurantId)}`;
   const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(target)}`;
   elements.adminQrImg.src = qrApiUrl;
-  elements.viewLiveMenuBtn.href = target;
+  if (elements.viewLiveMenuBtn) {
+    elements.viewLiveMenuBtn.href = target;
+    elements.viewLiveMenuBtn.target = '_blank';
+    elements.viewLiveMenuBtn.rel = 'noopener noreferrer';
+  }
+}
+
+async function downloadQrCode() {
+  const src = elements.adminQrImg?.src;
+  if (!src) {
+    showToast('رمز QR غير جاهز بعد.', 'warning');
+    return;
+  }
+  try {
+    const res = await fetch(src);
+    if (!res.ok) throw new Error('qr-fetch-failed');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${state.restaurantId}-qr.png`;
+    link.click();
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    window.open(src, '_blank', 'noopener,noreferrer');
+  }
 }
 
 async function handleSettingsSave(event) {
@@ -1093,8 +1167,10 @@ async function handleSettingsSave(event) {
     surface: elements.settingsColorSurface.value,
     gold: elements.settingsColorGold.value
   };
-  config.subscription = { status: elements.settingsSubscriptionStatus.value };
-  config.accessControl = { role: elements.settingsPortalRole.value };
+  if (isSuperAdmin()) {
+    config.subscription = { status: elements.settingsSubscriptionStatus.value };
+    config.accessControl = { role: elements.settingsPortalRole.value };
+  }
   config.customDomain = sanitizeInput(elements.settingsCustomDomain.value);
   config.darkMode = state.darkMode;
   const logoUrl = sanitizeInput(elements.settingsLogoUrl.value);
@@ -1121,12 +1197,8 @@ async function handleSettingsSave(event) {
 
 async function handleItemSave(event) {
   event.preventDefault();
-  const canManage =
-    state.currentRole === 'super_admin' ||
-    state.currentRole === 'restaurant_admin' ||
-    state.currentRole === 'admin';
-  if (!canManage) {
-    showToast('تعديل الأصناف متاح للمدراء فقط.', 'warning');
+  if (!canEditMenu()) {
+    showToast('لا تملك صلاحية تعديل الأصناف.', 'warning');
     return;
   }
 
@@ -1134,7 +1206,7 @@ async function handleItemSave(event) {
   const existingItem = isEditing
     ? state.menuItems.find((item) => item.id === elements.itemEditId.value)
     : null;
-  const itemId = elements.itemEditId.value || `${createSlug(elements.itemNameEn.value)}-${Date.now()}`;
+  const itemId = elements.itemEditId.value || `${createSlug(elements.itemNameEn.value || elements.itemNameAr.value)}-${Date.now()}`;
 
   const imageUrl = sanitizeInput(elements.imageUrl.value);
 
@@ -1156,9 +1228,7 @@ async function handleItemSave(event) {
     },
     isAvailable: elements.itemAvailable.checked,
     imageUrl,
-    orderIndex: existingItem?.orderIndex ?? state.menuItems.length,
-    views: existingItem?.views ?? 0,
-    orderClicks: existingItem?.orderClicks ?? 0
+    orderIndex: existingItem?.orderIndex ?? state.menuItems.length
   };
 
   if (isEditing) {
@@ -1185,12 +1255,8 @@ async function handleItemSave(event) {
 
 async function handleCategorySave(event) {
   event.preventDefault();
-  const canManage =
-    state.currentRole === 'super_admin' ||
-    state.currentRole === 'restaurant_admin' ||
-    state.currentRole === 'admin';
-  if (!canManage) {
-    showToast('تعديل التصنيفات متاح للمدراء فقط.', 'warning');
+  if (!canEditMenu()) {
+    showToast('لا تملك صلاحية تعديل التصنيفات.', 'warning');
     return;
   }
   const categoryId = sanitizeSlug(elements.categoryIdVal.value);
@@ -1285,11 +1351,7 @@ function editItem(itemId) {
 }
 
 function deleteCategory(categoryId) {
-  const canManage =
-    state.currentRole === 'super_admin' ||
-    state.currentRole === 'restaurant_admin' ||
-    state.currentRole === 'admin';
-  if (!canManage) {
+  if (!canManageRestaurant()) {
     showToast('حذف التصنيفات متاح للمدراء فقط.', 'warning');
     return;
   }
@@ -1317,11 +1379,7 @@ function deleteCategory(categoryId) {
 }
 
 function deleteItem(itemId) {
-  const canManage =
-    state.currentRole === 'super_admin' ||
-    state.currentRole === 'restaurant_admin' ||
-    state.currentRole === 'admin';
-  if (!canManage) {
+  if (!canManageRestaurant()) {
     showToast('حذف الأصناف متاح للمدراء فقط.', 'warning');
     return;
   }
@@ -1358,7 +1416,22 @@ async function toggleItemAvailability(itemId) {
   }
 }
 
+async function persistMenuOrToast() {
+  persistState();
+  if (!auth?.currentUser) return;
+  try {
+    await saveMenuDataToFirestore();
+  } catch (error) {
+    console.error('Menu persist failed:', error);
+    showToast(getFirestoreErrorMessage(error), 'error');
+  }
+}
+
 async function duplicateItem(itemId) {
+  if (!canEditMenu()) {
+    showToast('لا تملك صلاحية نسخ الأصناف.', 'warning');
+    return;
+  }
   const item = state.menuItems.find((entry) => entry.id === itemId);
   if (!item) return;
   const copy = {
@@ -1370,15 +1443,13 @@ async function duplicateItem(itemId) {
     orderClicks: 0
   };
   state.menuItems.push(copy);
-  persistState();
   renderTables();
   renderOverview();
-  if (auth?.currentUser) {
-    saveMenuDataToFirestore();
-  }
+  await persistMenuOrToast();
 }
 
 function handleCategoryDrop(targetId) {
+  if (!canEditMenu()) return;
   if (!state.dragId || state.dragId === targetId) return;
   const fromIndex = state.categories.findIndex((entry) => entry.id === state.dragId);
   const toIndex = state.categories.findIndex((entry) => entry.id === targetId);
@@ -1386,27 +1457,42 @@ function handleCategoryDrop(targetId) {
   const [moved] = state.categories.splice(fromIndex, 1);
   state.categories.splice(toIndex, 0, moved);
   state.categories = state.categories.map((entry, index) => ({ ...entry, orderIndex: index }));
-  persistState();
   renderTables();
-  if (auth?.currentUser) {
-    saveMenuDataToFirestore();
-  }
+  persistMenuOrToast();
 }
 
 function handleItemDrop(targetId) {
+  if (!canEditMenu()) return;
   if (!state.dragId || state.dragId === targetId) return;
-  const fromIndex = state.menuItems.findIndex((entry) => entry.id === state.dragId);
-  const toIndex = state.menuItems.findIndex((entry) => entry.id === targetId);
-  if (fromIndex < 0 || toIndex < 0) return;
-  const [moved] = state.menuItems.splice(fromIndex, 1);
-  state.menuItems.splice(toIndex, 0, moved);
-  state.menuItems = state.menuItems.map((entry, index) => ({ ...entry, orderIndex: index }));
-  persistState();
+  const filter = elements.itemsCategoryFilter?.value || 'all';
+  const sorted = state.menuItems
+    .slice()
+    .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
+  const visible = filter === 'all'
+    ? sorted
+    : sorted.filter((item) => item.categoryId === filter);
+  const fromVisible = visible.findIndex((entry) => entry.id === state.dragId);
+  const toVisible = visible.findIndex((entry) => entry.id === targetId);
+  if (fromVisible < 0 || toVisible < 0) return;
+
+  const [moved] = visible.splice(fromVisible, 1);
+  visible.splice(toVisible, 0, moved);
+
+  if (filter === 'all') {
+    state.menuItems = visible.map((entry, index) => ({ ...entry, orderIndex: index }));
+  } else {
+    const slots = sorted
+      .filter((item) => item.categoryId === filter)
+      .map((item) => item.orderIndex || 0)
+      .sort((a, b) => a - b);
+    const nextIndexById = new Map(visible.map((item, index) => [item.id, slots[index]]));
+    state.menuItems = state.menuItems.map((item) => (
+      nextIndexById.has(item.id) ? { ...item, orderIndex: nextIndexById.get(item.id) } : item
+    ));
+  }
   renderTables();
   renderOverview();
-  if (auth?.currentUser) {
-    saveMenuDataToFirestore();
-  }
+  persistMenuOrToast();
 }
 
 function exportMenuJson() {
@@ -1425,31 +1511,85 @@ function exportMenuJson() {
   URL.revokeObjectURL(url);
 }
 
+function isMenuExportPayload(parsed) {
+  return Boolean(
+    parsed &&
+    typeof parsed === 'object' &&
+    Array.isArray(parsed.categories) &&
+    Array.isArray(parsed.menuItems)
+  );
+}
+
 function importMenuJson(event) {
   const file = event.target.files?.[0];
+  event.target.value = '';
   if (!file) return;
+  if (!canManageRestaurant()) {
+    showToast('استيراد المنيو متاح للمدراء فقط.', 'warning');
+    return;
+  }
+
   const reader = new FileReader();
-  reader.onload = async () => {
+  reader.onload = () => {
+    let parsed;
     try {
-      const parsed = JSON.parse(reader.result);
-      state.restaurantConfig = { ...state.restaurantConfig, ...(parsed.restaurant || {}) };
-      state.categories = parsed.categories || [];
-      state.menuItems = parsed.menuItems || [];
-      persistUiPreferences();
-      renderCategoryOptions();
-      renderTables();
-      renderOverview();
-      populateSettingsForm();
-      if (auth?.currentUser) {
-        await saveMenuDataToFirestore();
-      }
-      showToast('تم استيراد المنيو بنجاح.', 'success');
+      parsed = JSON.parse(reader.result);
     } catch (error) {
       showToast('الملف المحدد ليس ملف تصدير منيو صالحاً.', 'error');
+      return;
     }
+    if (!isMenuExportPayload(parsed)) {
+      showToast('ملف الاستيراد ينقصه التصنيفات أو الأصناف.', 'error');
+      return;
+    }
+
+    openConfirmModal(
+      'استيراد المنيو؟',
+      'سيتم استبدال التصنيفات والأصناف الحالية بهذا الملف. لا يمكن التراجع بسهولة.',
+      async () => {
+        const previous = {
+          restaurantConfig: structuredClone(state.restaurantConfig),
+          categories: structuredClone(state.categories),
+          menuItems: structuredClone(state.menuItems)
+        };
+        try {
+          if (parsed.restaurant && typeof parsed.restaurant === 'object') {
+            const incoming = { ...parsed.restaurant };
+            delete incoming.analytics;
+            if (!isSuperAdmin()) {
+              delete incoming.subscription;
+              delete incoming.accessControl;
+            }
+            state.restaurantConfig = { ...state.restaurantConfig, ...incoming };
+          }
+          state.categories = parsed.categories;
+          state.menuItems = parsed.menuItems;
+          persistState();
+          renderCategoryOptions();
+          renderTables();
+          renderOverview();
+          populateSettingsForm();
+          if (auth?.currentUser) {
+            await saveMenuDataToFirestore();
+            await saveRestaurantToFirestore();
+          }
+          showToast('تم استيراد المنيو بنجاح.', 'success');
+        } catch (error) {
+          state.restaurantConfig = previous.restaurantConfig;
+          state.categories = previous.categories;
+          state.menuItems = previous.menuItems;
+          renderCategoryOptions();
+          renderTables();
+          renderOverview();
+          populateSettingsForm();
+          console.error('Menu import failed:', error);
+          showToast(getFirestoreErrorMessage(error), 'error');
+        }
+      },
+      'استيراد'
+    );
   };
   reader.readAsText(file);
-  event.target.value = '';
 }
 
 async function createLiveBackup() {
@@ -1472,21 +1612,11 @@ async function createLiveBackup() {
 
 async function saveRestaurantToFirestore() {
   const restaurantRef = doc(db, 'restaurants', state.restaurantId);
-  await setDoc(restaurantRef, state.restaurantConfig, { merge: true });
+  await setDoc(restaurantRef, restaurantConfigForWrite(), { merge: true });
 }
 
 async function saveMenuDataToFirestore() {
   const batch = writeBatch(db);
-  const restaurantRef = doc(db, 'restaurants', state.restaurantId);
-  batch.set(
-    restaurantRef,
-    {
-      ...state.restaurantConfig,
-      analytics: state.restaurantConfig.analytics || { views: 0, whatsappOrders: 0 }
-    },
-    { merge: true }
-  );
-
   const categoriesRef = collection(db, 'restaurants', state.restaurantId, 'categories');
   const itemsRef = collection(db, 'restaurants', state.restaurantId, 'menu_items');
 
@@ -1511,11 +1641,11 @@ async function saveMenuDataToFirestore() {
   });
 
   state.categories.forEach((category, index) => {
-    batch.set(doc(categoriesRef, category.id), { ...category, orderIndex: index });
+    batch.set(doc(categoriesRef, category.id), { ...category, orderIndex: index }, { merge: true });
   });
 
   state.menuItems.forEach((item, index) => {
-    batch.set(doc(itemsRef, item.id), { ...item, orderIndex: index });
+    batch.set(doc(itemsRef, item.id), menuItemForWrite(item, index), { merge: true });
   });
 
   await batch.commit();
@@ -1636,15 +1766,26 @@ function syncFromFirestore() {
 function handleResetAnalytics() {
   openConfirmModal(
     'تصفير العدادات؟',
-    'سيتم تصفير عداد المشاهدات والبدء من الصفر. عدد الطلبات لا يتأثر لأنه يُحسب من الطلبات الفعلية.',
+    'سيتم تصفير مشاهدات المطعم ونقرات كل طبق. عدد الطلبات الحقيقي لا يتأثر لأنه يُحسب من الطلبات الواردة.',
     async () => {
       try {
         assertAuthenticated();
-        await updateDoc(doc(db, 'restaurants', state.restaurantId), {
+        const batch = writeBatch(db);
+        batch.update(doc(db, 'restaurants', state.restaurantId), {
           'analytics.views': 0,
           'analytics.whatsappOrders': 0
         });
-        showToast('تم تصفير العدادات — الأرقام من الآن حقيقية بالكامل.', 'success');
+        state.menuItems.forEach((item) => {
+          batch.update(doc(db, 'restaurants', state.restaurantId, 'menu_items', item.id), {
+            views: 0,
+            orderClicks: 0
+          });
+        });
+        await batch.commit();
+        state.restaurantConfig.analytics = { views: 0, whatsappOrders: 0 };
+        state.menuItems = state.menuItems.map((item) => ({ ...item, views: 0, orderClicks: 0 }));
+        renderOverview();
+        showToast('تم تصفير العدادات.', 'success');
       } catch (error) {
         console.error('Analytics reset failed:', error);
         showToast(getFirestoreErrorMessage(error), 'error');
@@ -1694,10 +1835,7 @@ function renderOrders() {
     return;
   }
 
-  const canDelete =
-    state.currentRole === 'super_admin' ||
-    state.currentRole === 'restaurant_admin' ||
-    state.currentRole === 'admin';
+  const canDelete = canManageRestaurant();
 
   elements.ordersList.innerHTML = visible.map((order) => {
     const meta = ORDER_STATUS_META[order.status] || ORDER_STATUS_META.new;
@@ -1818,11 +1956,16 @@ function closeConfirmModal() {
   state.confirmCallback = null;
 }
 
-function runConfirmAction() {
-  if (typeof state.confirmCallback === 'function') {
-    state.confirmCallback();
-  }
+async function runConfirmAction() {
+  const callback = state.confirmCallback;
   closeConfirmModal();
+  if (typeof callback !== 'function') return;
+  try {
+    await callback();
+  } catch (error) {
+    console.error('Confirm action failed:', error);
+    showToast(getFirestoreErrorMessage(error), 'error');
+  }
 }
 
 function sanitizeInput(value) {

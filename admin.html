@@ -191,7 +191,7 @@
                         <div class="dashboard-card">
                             <div class="card-header">
                                 <h3>الأطباق الأكثر طلباً</h3>
-                                <p>الأطباق الأعلى نقرات طلب عبر الواتساب.</p>
+                                <p>الأطباق الأعلى طلباً من الزبائن عبر المنيو.</p>
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
@@ -201,7 +201,7 @@
                                                 <th>اسم الطبق</th>
                                                 <th>التصنيف</th>
                                                 <th>السعر</th>
-                                                <th>نقرات الواتساب</th>
+                                                <th>نقرات الطلب</th>
                                                 <th>المشاهدات</th>
                                             </tr>
                                         </thead>
@@ -518,7 +518,7 @@
                                             <span>تصدير المنيو (JSON)</span>
                                         </button>
                                         <input type="file" id="import-json-input" class="hidden-input" accept=".json" aria-label="استيراد المنيو (JSON)" title="استيراد المنيو (JSON)">
-                                        <button type="button" class="btn-admin-secondary" onclick="document.getElementById('import-json-input').click()">
+                                        <button type="button" id="btn-import-json" class="btn-admin-secondary" onclick="document.getElementById('import-json-input').click()">
                                             <i class="fa-solid fa-upload"></i>
                                             <span>استيراد المنيو (JSON)</span>
                                         </button>
@@ -697,7 +697,6 @@
     <!-- Main Controller Logic -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
     <script>
-      // TODO: replace with your real Cloudinary cloud name
       window.CLOUDINARY_CLOUD_NAME = "t94xf7rb";
       window.CLOUDINARY_UPLOAD_PRESET = "menu_test";
     </script>
@@ -719,6 +718,6 @@
         });
       })();
     </script>
-    <script type="module" src="admin.js?v=7"></script>
+    <script type="module" src="admin.js?v=8"></script>
 </body>
 </html>

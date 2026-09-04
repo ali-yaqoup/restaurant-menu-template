@@ -1583,6 +1583,28 @@ body:lang(ar) .cart-header-title h3 {
     transform: translateY(-1px);
 }
 
+.btn-whatsapp-checkout:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    filter: none;
+    transform: none;
+    box-shadow: none;
+}
+
+.cart-footer.is-empty .order-form {
+    display: none;
+}
+
+.contact-detail a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.contact-detail a:hover {
+    color: var(--gold);
+    text-decoration: underline;
+}
+
 /* 9. Floating WhatsApp Widget Button */
 .floating-whatsapp-btn {
     position: fixed;

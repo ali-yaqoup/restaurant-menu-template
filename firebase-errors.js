@@ -35,6 +35,17 @@ export function getFirestoreErrorMessage(error) {
     return error.message || "فشل الاتصال بقاعدة البيانات.";
 }
 
+export function getPublicOrderErrorMessage(error) {
+    if (!error) return "تعذّر إرسال الطلب. حاول مجدداً.";
+    if (error.code === "permission-denied") {
+        return "تعذّر إرسال الطلب حالياً. تواصل مع إدارة المطعم.";
+    }
+    if (error.code === "unavailable" || error.code === "network-request-failed") {
+        return "تعذّر إرسال الطلب. تحقق من اتصالك وحاول مجدداً.";
+    }
+    return "تعذّر إرسال الطلب. حاول مجدداً.";
+}
+
 export function formatAppError(error) {
     if (!error) return "حدث خطأ غير معروف.";
     if (error.code === "permission-denied") {

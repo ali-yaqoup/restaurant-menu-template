@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="description" content="قائمة الطعام الرقمية — تصفح الأطباق واطلب مباشرة عبر الواتساب.">
-    <meta name="keywords" content="منيو رقمي, قائمة طعام, مطعم, طلب واتساب, برغر, بيتزا, حلويات, مشروبات">
+    <meta name="description" content="قائمة الطعام الرقمية — تصفح الأطباق واطلب مباشرة من التطبيق.">
+    <meta name="keywords" content="منيو رقمي, قائمة طعام, مطعم, طلب مباشر, برغر, بيتزا, حلويات, مشروبات">
     <meta name="author" content="Taste Restaurant">
     <title>مطعم تيست — قائمة الطعام الرقمية</title>
 
@@ -12,14 +12,14 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://taste-restaurant.github.io/">
     <meta property="og:title" content="مطعم تيست — قائمة الطعام الرقمية">
-    <meta property="og:description" content="تصفح الأطباق واطلب مباشرة عبر الواتساب.">
+    <meta property="og:description" content="تصفح الأطباق واطلب مباشرة من التطبيق.">
     <meta property="og:image" content="assets/logo.svg">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://taste-restaurant.github.io/">
     <meta property="twitter:title" content="مطعم تيست — قائمة الطعام الرقمية">
-    <meta property="twitter:description" content="تصفح الأطباق واطلب مباشرة عبر الواتساب.">
+    <meta property="twitter:description" content="تصفح الأطباق واطلب مباشرة من التطبيق.">
     <meta property="twitter:image" content="assets/logo.svg">
 
     <!-- Favicon -->
@@ -76,7 +76,7 @@
     <!-- Navigation Header -->
     <header class="main-header">
         <div class="nav-container">
-            <a href="#" class="nav-brand">
+            <a href="./" class="nav-brand">
                 <img id="nav-logo-img" src="assets/logo.svg" alt="شعار المطعم" class="nav-logo">
                 <span id="nav-brand-name" class="brand-text">مطعم تيست</span>
             </a>
@@ -88,7 +88,7 @@
                 </button>
 
                 <!-- Shopping Cart Button -->
-                <button id="cart-toggle" class="btn-icon cart-btn" aria-label="عرض الطلب" data-tooltip="تفاصيل الطلب">
+                <button id="cart-toggle" class="btn-icon cart-btn" aria-label="عرض الطلب" data-tooltip="تفاصيل الطلب" aria-expanded="false" aria-controls="cart-drawer">
                     <i class="fa-solid fa-receipt"></i>
                     <span id="cart-count" class="cart-badge">0</span>
                 </button>
@@ -204,7 +204,7 @@
                 </div>
             </div>
 
-            <div class="cart-footer">
+            <div class="cart-footer is-empty">
                 <!-- Customer details -->
                 <div class="order-form">
                     <div class="order-form-row">
@@ -221,7 +221,7 @@
                         <span id="cart-total-value">0.00 دينار</span>
                     </div>
                 </div>
-                <button id="whatsapp-checkout" class="btn-whatsapp-checkout">
+                <button id="whatsapp-checkout" class="btn-whatsapp-checkout" type="button" disabled>
                     <i class="fa-solid fa-paper-plane"></i>
                     <span data-translate="sendWhatsAppOrder">تأكيد الطلب</span>
                 </button>
@@ -261,8 +261,8 @@
                     </li>
                 </ul>
                 <h4 class="contact-info-title" data-translate="contactTitle">اتصل بنا</h4>
-                <p class="contact-detail"><i class="fa-solid fa-phone gold-text"></i> <span id="footer-phone-val" dir="ltr">+970 599 123 456</span></p>
-                <p class="contact-detail"><i class="fa-solid fa-envelope gold-text"></i> <span id="footer-email-val">info@tasterestaurant.com</span></p>
+                <p class="contact-detail"><i class="fa-solid fa-phone gold-text"></i> <a id="footer-phone-link" href="tel:+970599123456" dir="ltr"><span id="footer-phone-val">+970 599 123 456</span></a></p>
+                <p class="contact-detail"><i class="fa-solid fa-envelope gold-text"></i> <a id="footer-email-link" href="mailto:info@tasterestaurant.com"><span id="footer-email-val">info@tasterestaurant.com</span></a></p>
                 <p class="contact-detail"><i class="fa-solid fa-location-dot gold-text"></i> <span id="footer-address-val">رام الله، فلسطين</span></p>
             </div>
 
@@ -281,13 +281,13 @@
             <p class="waytech-credit">
                 <span class="waytech-credit-inner">
                     <span class="waytech-text">تصميم وتطوير</span>
-                    <img src="assets/way-tech-logo.png?v=2" alt="WAY TECH" class="waytech-logo-lockup" loading="lazy">
+                    <img src="assets/way-tech-logo.svg" alt="WAY TECH" class="waytech-logo-lockup" loading="lazy">
                 </span>
             </p>
         </div>
     </footer>
 
     <!-- App Logic Script (Type module to allow ES imports) -->
-    <script type="module" src="app.js?v=5"></script>
+    <script type="module" src="app.js?v=6"></script>
 </body>
 </html>
