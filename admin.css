@@ -144,11 +144,12 @@ body.admin-body.admin-light .admin-loader {
 
 .login-kicker {
   display: block;
-  width: fit-content;
-  margin: 0 auto 18px;
+  width: 100%;
+  margin: 0 0 18px;
   padding: 0;
   border: 0;
   background: none;
+  text-align: center;
   font-size: 0.78rem;
   font-weight: 400;
   letter-spacing: 0.22em;
@@ -545,8 +546,22 @@ body.admin-body.admin-light .brand-logo-frame {
 .sidebar-footer { margin-top: auto; display: flex; flex-direction: column; gap: 12px; }
 .user-profile { display: flex; align-items: center; gap: 8px; color: var(--admin-muted); font-size: 0.86rem; min-width: 0; }
 .user-profile span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.btn-logout { width: 100%; background: transparent; color: var(--admin-text); border-color: var(--admin-hairline); }
+.btn-logout { width: 100%; background: transparent; color: var(--admin-text); border-color: var(--admin-hairline); font-family: inherit; }
 .btn-logout:hover { color: var(--admin-danger); border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.07); }
+.theme-toggle-btn {
+  width: 100%;
+  background: transparent;
+  color: var(--admin-muted);
+  border-color: var(--admin-hairline);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.86rem;
+}
+.theme-toggle-btn:hover {
+  color: var(--admin-gold);
+  border-color: color-mix(in srgb, var(--admin-gold) 42%, transparent);
+  background: color-mix(in srgb, var(--admin-gold) 8%, transparent);
+}
 .mobile-admin-header { display: none; padding: 16px; background: var(--admin-surface); border-bottom: 1px solid var(--admin-hairline); align-items: center; justify-content: space-between; }
 .admin-main-panel {
   flex: 1;
@@ -555,6 +570,11 @@ body.admin-body.admin-light .brand-logo-frame {
   background: transparent;
 }
 .panel-header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 22px; }
+.panel-header:not(.flex-header) {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
 .panel-header h2 { font-size: 1.7rem; }
 .panel-header p { margin-top: 4px; font-size: 0.9rem; }
 .flex-header { align-items: center; }
