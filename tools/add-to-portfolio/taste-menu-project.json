@@ -1,0 +1,21 @@
+{
+  "id": 17,
+  "title": "Taste — Luxury Digital Menu",
+  "description": "Arabic RTL digital menu template for fine-dining restaurants: live Firestore catalog, in-app ordering, QR codes, and a full admin dashboard for menu, orders, analytics and branding. Quiet maison theme that follows each restaurant's own gold.",
+  "image": "projects/taste-menu.jpg",
+  "technologies": [
+    "HTML",
+    "CSS",
+    "JavaScript",
+    "Firebase",
+    "Firestore",
+    "Cloudinary",
+    "RTL"
+  ],
+  "category": "fullstack",
+  "featured": true,
+  "github": "https://github.com/ali-yaqoup/restaurant-menu-template",
+  "demo": "https://ali-yaqoup.github.io/Ali-Portfolio/demos/restaurant-menu/",
+  "startDate": "09/2026",
+  "status": "Completed"
+}
