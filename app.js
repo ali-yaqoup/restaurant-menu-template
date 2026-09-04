@@ -20,11 +20,14 @@ import {
 // ==========================================================================
 // 1. Default display data (used only when Firestore has no data yet)
 // ==========================================================================
+const DEFAULT_LOGO = "assets/logo-seal.jpg";
+const FALLBACK_DISH_IMAGE = "assets/dish-fallback.svg";
+
 const fallbackRestaurant = {
     name: { en: "Taste Restaurant", ar: "مطعم تيست" },
     slogan: { en: "Fresh & Delicious Every Day", ar: "طازج ولذيذ كل يوم" },
     whatsappNumber: "+970599123456",
-    logoUrl: "assets/logo.svg",
+    logoUrl: DEFAULT_LOGO,
     colors: { bg: "#0A0A0A", surface: "#121212", gold: "#D4AF37" },
     workingHours: { en: "Saturday - Friday (12:00 PM - 12:00 AM)", ar: "السبت - الجمعة (12:00 ظهراً - 12:00 ليلاً)" },
     currency: { en: "JD", ar: "دينار" },
@@ -44,7 +47,7 @@ const fallbackItems = [
         id: "truffle-burger",
         categoryId: "burgers",
         price: 8.0,
-        imageUrl: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80",
+        imageUrl: "assets/truffle_burger.png",
         name: { en: "Truffle Burger", ar: "برغر الترفل" },
         description: { en: "Juicy Angus beef, premium black truffle aioli, melted Swiss cheese, and caramelized onions on a toasted brioche bun.", ar: "لحم أنجوس مشوي، صلصة الترافل الأسود الفاخرة، جبن سويسري ذائب، وبصل مكرمل في خبز البريوش الطازج." },
         tags: { en: ["Premium", "Chef Special"], ar: ["فاخر", "مميز"] },
@@ -54,7 +57,7 @@ const fallbackItems = [
         id: "cheese-burger",
         categoryId: "burgers",
         price: 7.0,
-        imageUrl: "https://images.unsplash.com/photo-1550547660-9454987c1f0f?auto=format&fit=crop&w=600&q=80",
+        imageUrl: "assets/cheese_burger.png",
         name: { en: "Cheese Burger", ar: "برغر الجبن" },
         description: { en: "Premium beef patty, melting cheddar cheese, fresh crisp lettuce, vine-ripened tomatoes, and our signature special sauce.", ar: "شريحة لحم بقري فاخر، جبنة شيدر ذائبة، خس طازج، طماطم، وصلصة تيست الخاصة." },
         tags: { en: ["Classic"], ar: ["كلاسيكي"] },
@@ -64,7 +67,7 @@ const fallbackItems = [
         id: "margherita-pizza",
         categoryId: "pizza",
         price: 9.0,
-        imageUrl: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=600&q=80",
+        imageUrl: "assets/margherita_pizza.png",
         name: { en: "Margherita Pizza", ar: "بيتزا مارغريتا" },
         description: { en: "Artisan pizza crust topped with rich tomato sauce, fresh buffalo mozzarella, aromatic fresh basil leaves, and a drizzle of extra virgin olive oil.", ar: "عجينة البيتزا الحرفية تعلوها صلصة الطماطم الغنية، جبنة الموزاريلا الطازجة، أوراق الريحان العطرية ورشة من زيت الزيتون البكر." },
         tags: { en: ["Vegetarian", "Artisan"], ar: ["نباتي", "حرفية"] },
@@ -74,7 +77,7 @@ const fallbackItems = [
         id: "pepperoni-pizza",
         categoryId: "pizza",
         price: 10.0,
-        imageUrl: "https://images.unsplash.com/photo-1628840042765-356cda07504e?auto=format&fit=crop&w=600&q=80",
+        imageUrl: "assets/pepperoni_pizza.png",
         name: { en: "Pepperoni Pizza", ar: "بيتزا بيبروني" },
         description: { en: "Classic Italian crust loaded with premium spicy beef pepperoni, mozzarella cheese, fresh oregano, and an optional touch of hot honey.", ar: "عجينة إيطالية كلاسيكية مغطاة بقطع البيبروني البقري الحار، جبنة الموزاريلا، الأوريغانو الطازج مع لمسة عسل حار اختيارية." },
         tags: { en: ["Spicy"], ar: ["حار"] },
@@ -84,7 +87,7 @@ const fallbackItems = [
         id: "golden-mojito",
         categoryId: "drinks",
         price: 3.0,
-        imageUrl: "https://images.unsplash.com/photo-1551538827-9b03706baf00?auto=format&fit=crop&w=600&q=80",
+        imageUrl: "assets/golden_mojito.png",
         name: { en: "Golden Mojito", ar: "موهيتو ذهبي" },
         description: { en: "A refreshing blend of fresh lime, wild mint, sparkling club soda, and edible 24K gold flakes for a touch of luxury.", ar: "مزيج منعش من الليمون الأخضر، النعناع البري، صودا فوارة ورقاقات الذهب عيار 24 القابلة للأكل لمسة من الفخامة." },
         tags: { en: ["Signature", "Cold"], ar: ["توقيعنا", "بارد"] },
@@ -94,7 +97,7 @@ const fallbackItems = [
         id: "orange-juice",
         categoryId: "drinks",
         price: 2.5,
-        imageUrl: "https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?auto=format&fit=crop&w=600&q=80",
+        imageUrl: "assets/orange_juice.jpg",
         name: { en: "Fresh Orange Juice", ar: "عصير برتقال طازج" },
         description: { en: "100% freshly squeezed sweet oranges, served chilled on ice. Packed with Vitamin C and natural energy.", ar: "عصير برتقال طبيعي 100% معصور طازجاً، يقدم مبرداً مع الثلج. غني بفيتامين سي والطاقة الطبيعية." },
         tags: { en: ["Fresh"], ar: ["طازج"] },
@@ -104,7 +107,7 @@ const fallbackItems = [
         id: "kunafa-cheesecake",
         categoryId: "desserts",
         price: 5.0,
-        imageUrl: "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=600&q=80",
+        imageUrl: "assets/kunafa_cheesecake.jpg",
         name: { en: "Pistachio Kunafa Cheesecake", ar: "تشيز كيك الكنافة بالفستق" },
         description: { en: "An exquisite fusion of creamy New York cheesecake layered with crispy, golden Arabic kunafa, topped with rich pistachio sauce.", ar: "اندماج فاخر بين التشيز كيك الكريمي الغني وعجينة الكنافة الذهبية المقرمشة، مغطاة بصلصة الفستق الحلبي الفاخرة." },
         tags: { en: ["Best Seller", "Fusion"], ar: ["الأكثر مبيعاً", "مبتكر"] },
@@ -114,7 +117,7 @@ const fallbackItems = [
         id: "lava-cake",
         categoryId: "desserts",
         price: 4.0,
-        imageUrl: "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=600&q=80",
+        imageUrl: "assets/lava_cake.jpg",
         name: { en: "Chocolate Lava Cake", ar: "كيك الشوكولاتة البركانية" },
         description: { en: "Warm chocolate cake with a molten, liquid chocolate center, lightly dusted with cocoa and served with premium vanilla ice cream.", ar: "كيك الشوكولاتة الدافئ مع قلب من الشوكولاتة السائلة الذائبة، مرشوش بالكاكاو ويقدم مع آيس كريم الفانيليا الفاخر." },
         tags: { en: ["Warm"], ar: ["دافئ"] },
@@ -493,6 +496,34 @@ function localizedText(value, lang = currentLanguage) {
     return String(value);
 }
 
+function applyBrandLogo(el, url) {
+    if (!el) return;
+    const raw = String(url ?? "").trim();
+    const isOldPlaceholder = !raw || /assets\/logo\.svg(\?|$)/i.test(raw);
+    const logo = isOldPlaceholder ? DEFAULT_LOGO : (safeMediaUrl(raw) || DEFAULT_LOGO);
+    el.src = logo;
+    el.addEventListener("error", () => {
+        if (el.getAttribute("src") !== DEFAULT_LOGO) el.src = DEFAULT_LOGO;
+    }, { once: true });
+}
+
+const LOCAL_DISH_IMAGES = {
+    "truffle-burger": "assets/truffle_burger.png",
+    "cheese-burger": "assets/cheese_burger.png",
+    "margherita-pizza": "assets/margherita_pizza.png",
+    "pepperoni-pizza": "assets/pepperoni_pizza.png",
+    "golden-mojito": "assets/golden_mojito.png",
+    "orange-juice": "assets/orange_juice.jpg",
+    "kunafa-cheesecake": "assets/kunafa_cheesecake.jpg",
+    "lava-cake": "assets/lava_cake.jpg"
+};
+
+function dishImageUrl(item, width) {
+    const fromItem = safeMediaUrl(item?.imageUrl);
+    const fromId = LOCAL_DISH_IMAGES[item?.id] || "";
+    return optimizedImg(fromItem || fromId || FALLBACK_DISH_IMAGE, width) || FALLBACK_DISH_IMAGE;
+}
+
 function safeMediaUrl(url) {
     const v = String(url ?? "").trim();
     if (!v) return "";
@@ -691,10 +722,7 @@ function applyLanguage(lang) {
     const brandNameEl = document.getElementById("nav-brand-name");
     const logoImgEl = document.getElementById("nav-logo-img");
     if (brandNameEl) brandNameEl.textContent = localizedText(restaurantConfig.name);
-    if (logoImgEl && restaurantConfig.logoUrl) {
-        const logo = safeMediaUrl(restaurantConfig.logoUrl);
-        if (logo) logoImgEl.src = logo;
-    }
+    applyBrandLogo(logoImgEl, restaurantConfig.logoUrl);
 
     // Hero details
     const heroName = document.getElementById("hero-restaurant-name");
@@ -702,10 +730,7 @@ function applyLanguage(lang) {
     const heroLogo = document.getElementById("hero-logo-img");
     if (heroName) heroName.textContent = localizedText(restaurantConfig.name);
     if (heroSlogan) heroSlogan.textContent = localizedText(restaurantConfig.slogan);
-    if (heroLogo && restaurantConfig.logoUrl) {
-        const logo = safeMediaUrl(restaurantConfig.logoUrl);
-        if (logo) heroLogo.src = logo;
-    }
+    applyBrandLogo(heroLogo, restaurantConfig.logoUrl);
 
     // Footer details
     const footerLogo = document.getElementById("footer-logo-img");
@@ -720,8 +745,7 @@ function applyLanguage(lang) {
     const footerEmailLink = document.getElementById("footer-email-link");
     const footerAddress = document.getElementById("footer-address-val");
 
-    const logo = safeMediaUrl(restaurantConfig.logoUrl);
-    if (footerLogo && logo) footerLogo.src = logo;
+    applyBrandLogo(footerLogo, restaurantConfig.logoUrl);
     if (footerName) footerName.textContent = localizedText(restaurantConfig.name);
     if (footerSlogan) footerSlogan.textContent = localizedText(restaurantConfig.slogan);
     if (footerCopyrightName) footerCopyrightName.textContent = localizedText(restaurantConfig.name);
@@ -982,13 +1006,13 @@ function renderMenuItems() {
         // Add to Cart disables if out of stock
         const actionDisabled = isOutOfStock ? "disabled" : "";
 
-        const safeImg = escapeHtml(optimizedImg(safeMediaUrl(item.imageUrl) || "", 800));
+        const safeImg = escapeHtml(dishImageUrl(item, 800));
         const safeName = escapeHtml(localizedText(item.name));
         const safeDesc = escapeHtml(localizedText(item.description));
         const safeId = escapeHtml(item.id);
         card.innerHTML = `
             <div class="card-img-container">
-                <img src="${safeImg}" alt="${safeName}" class="menu-card-img skeleton" loading="lazy" decoding="async" onload="this.classList.remove('skeleton')">
+                <img src="${safeImg}" alt="${safeName}" class="menu-card-img skeleton" loading="lazy" decoding="async" onload="this.classList.remove('skeleton')" onerror="this.onerror=null;this.src='${FALLBACK_DISH_IMAGE}';this.classList.remove('skeleton')">
                 <span class="card-price-badge">${Number(item.price).toFixed(2)} ${currencySymbol}</span>
                 ${stockBadge}
             </div>
@@ -1225,11 +1249,11 @@ function renderCart() {
         const cartItemEl = document.createElement("div");
         cartItemEl.className = "cart-item";
 
-        const safeCartImg = escapeHtml(optimizedImg(safeMediaUrl(item.imageUrl) || "", 200));
+        const safeCartImg = escapeHtml(dishImageUrl(item, 200));
         const safeCartName = escapeHtml(localizedText(item.name));
         const safeCartId = escapeHtml(item.id);
         cartItemEl.innerHTML = `
-            <img src="${safeCartImg}" alt="${safeCartName}" class="cart-item-img" loading="lazy" decoding="async">
+            <img src="${safeCartImg}" alt="${safeCartName}" class="cart-item-img" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${FALLBACK_DISH_IMAGE}'">
             <div class="cart-item-info">
                 <div>
                     <h4 class="cart-item-title">${safeCartName}</h4>

@@ -25,6 +25,7 @@ const UI_PREFS_KEY = 'taste-admin-ui-prefs';
 const LOCAL_STATE_KEY = 'taste-admin-menu-snapshot';
 const CLOUDINARY_CLOUD_NAME = window.CLOUDINARY_CLOUD_NAME || '';
 const CLOUDINARY_UPLOAD_PRESET = window.CLOUDINARY_UPLOAD_PRESET || '';
+const DEFAULT_LOGO = 'assets/logo-seal.jpg';
 const DEFAULT_RESTAURANT_ID = 'taste';
 const DEFAULT_RESTAURANT = {
   name: { en: 'Taste Restaurant', ar: 'مطعم تيست' },
@@ -34,7 +35,7 @@ const DEFAULT_RESTAURANT = {
   workingHours: { en: 'Saturday - Friday (12:00 PM - 12:00 AM)', ar: 'السبت - الجمعة (12:00 ظهراً - 12:00 ليلاً)' },
   currency: { en: 'JD', ar: 'دينار' },
   address: { en: 'Ramallah, Palestine', ar: 'رام الله، فلسطين' },
-  logoUrl: 'assets/logo.svg',
+  logoUrl: DEFAULT_LOGO,
   colors: { bg: '#0A0A0A', surface: '#121212', gold: '#D4AF37' },
   subscription: { status: 'trial' },
   analytics: { views: 0, whatsappOrders: 0 },
@@ -55,7 +56,7 @@ const DEFAULT_ITEMS = [
     id: 'truffle-burger',
     categoryId: 'burgers',
     price: 8,
-    imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80',
+    imageUrl: 'assets/truffle_burger.png',
     name: { en: 'Truffle Burger', ar: 'برغر الترفل' },
     description: { en: 'Premium beef with truffle aioli.', ar: 'لحم فاخر وصلصة ترافل.' },
     tags: { en: ['Premium', 'Chef Special'], ar: ['فاخر', 'مميز'] },
@@ -68,7 +69,7 @@ const DEFAULT_ITEMS = [
     id: 'cheese-burger',
     categoryId: 'burgers',
     price: 7,
-    imageUrl: 'https://images.unsplash.com/photo-1550547660-9454987c1f0f?auto=format&fit=crop&w=600&q=80',
+    imageUrl: 'assets/cheese_burger.png',
     name: { en: 'Cheese Burger', ar: 'برغر الجبن' },
     description: { en: 'Classic smash burger with cheddar.', ar: 'برغر كلاسيكي بالجبنة.' },
     tags: { en: ['Classic'], ar: ['كلاسيكي'] },
@@ -81,7 +82,7 @@ const DEFAULT_ITEMS = [
     id: 'margherita-pizza',
     categoryId: 'pizza',
     price: 9,
-    imageUrl: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=600&q=80',
+    imageUrl: 'assets/margherita_pizza.png',
     name: { en: 'Margherita Pizza', ar: 'بيتزا مارغريتا' },
     description: { en: 'Tomato, mozzarella, basil.', ar: 'طماطم وموزاريلا وريحان.' },
     tags: { en: ['Vegetarian'], ar: ['نباتي'] },
@@ -531,7 +532,11 @@ function showDashboard(user) {
 
 function renderAdminBrand() {
   elements.sidebarBrandName.textContent = state.restaurantConfig.name?.ar || state.restaurantConfig.name?.en || 'لوحة التحكم';
-  elements.sidebarLogo.src = state.restaurantConfig.logoUrl || 'assets/logo.svg';
+  elements.sidebarLogo.src = state.restaurantConfig.logoUrl || DEFAULT_LOGO;
+  elements.sidebarLogo.onerror = () => {
+    elements.sidebarLogo.onerror = null;
+    elements.sidebarLogo.src = DEFAULT_LOGO;
+  };
 }
 
 function updatePermissionAwareUi() {
