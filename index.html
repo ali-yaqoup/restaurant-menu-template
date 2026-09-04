@@ -34,7 +34,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Custom Stylesheet -->
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=8">
 
     <!-- Dynamic Color Styles Target -->
     <style id="dynamic-theme-colors"></style>
@@ -71,6 +71,7 @@
     <div class="glow-bg">
         <div class="glow-circle glow-circle-1"></div>
         <div class="glow-circle glow-circle-2"></div>
+        <div class="glow-circle glow-circle-3"></div>
     </div>
 
     <!-- Navigation Header -->
@@ -99,16 +100,18 @@
     <!-- Hero Section -->
     <section class="hero-section">
         <div class="hero-content">
+            <p class="hero-kicker animate-fade-in" data-translate="heroKicker">قائمة الطعام الرقمية</p>
             <div class="hero-logo-container">
-                <img id="hero-logo-img" src="assets/logo.svg" alt="شعار المطعم" class="hero-logo animate-fade-in">
+                <div class="hero-logo-frame">
+                    <img id="hero-logo-img" src="assets/logo.svg" alt="شعار المطعم" class="hero-logo animate-fade-in">
+                </div>
             </div>
             <h1 id="hero-restaurant-name" class="restaurant-name animate-slide-up">مطعم تيست</h1>
             <p id="hero-restaurant-slogan" class="restaurant-slogan animate-slide-up-delayed">طازج ولذيذ كل يوم</p>
 
-            <!-- Luxury Divider -->
             <div class="gold-divider">
                 <span class="line"></span>
-                <span class="star"><i class="fa-solid fa-star"></i></span>
+                <span class="star"><i class="fa-solid fa-diamond"></i></span>
                 <span class="line"></span>
             </div>
 
@@ -154,6 +157,7 @@
         <div class="container">
             <!-- Dynamic Section Title -->
             <div class="section-header">
+                <span class="section-flourish" aria-hidden="true"></span>
                 <h2 id="current-category-title" data-translate="catAll">القائمة الكاملة</h2>
                 <p id="items-count-display"><span id="items-count">0</span> <span data-translate="itemsFound">أطباق متوفرة</span></p>
             </div>
@@ -288,6 +292,6 @@
     </footer>
 
     <!-- App Logic Script (Type module to allow ES imports) -->
-    <script type="module" src="app.js?v=6"></script>
+    <script type="module" src="app.js?v=7"></script>
 </body>
 </html>

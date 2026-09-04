@@ -133,6 +133,7 @@ const translations = {
         filterLabel: "Filter",
         filterTitle: "Filter by Category",
         catAll: "All Menu",
+        heroKicker: "Digital Dining Menu",
         itemsFound: "items found",
         noItemsTitle: "No items found",
         noItemsDesc: "Try searching for something else or browse other categories.",
@@ -170,6 +171,7 @@ const translations = {
         filterLabel: "تصفية",
         filterTitle: "تصفية حسب الفئة",
         catAll: "القائمة الكاملة",
+        heroKicker: "قائمة الطعام الرقمية",
         itemsFound: "أطباق متوفرة",
         noItemsTitle: "لم يتم العثور على أطباق",
         noItemsDesc: "حاول البحث عن شيء آخر أو تصفح فئات أخرى.",
@@ -998,11 +1000,11 @@ function renderMenuItems() {
                 <div class="card-tags-row">${tagsHtml}</div>
                 <div class="card-actions">
                     <button type="button" class="btn btn-primary" data-action="order" data-item-id="${safeId}" ${actionDisabled}>
-                        <i class="fa-solid fa-bolt" aria-hidden="true"></i>
+                        <i class="fa-solid fa-utensils" aria-hidden="true"></i>
                         <span>${translations[lang].orderNow}</span>
                     </button>
                     <button type="button" class="btn btn-secondary" data-action="add" data-item-id="${safeId}" ${actionDisabled}>
-                        <i class="fa-solid fa-cart-plus" aria-hidden="true"></i>
+                        <i class="fa-solid fa-plus" aria-hidden="true"></i>
                         <span>${translations[lang].addToOrder}</span>
                     </button>
                 </div>
